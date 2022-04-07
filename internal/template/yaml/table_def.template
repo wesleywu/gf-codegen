@@ -1,0 +1,79 @@
+apiVersion: {{.apiVersion}}
+table:
+    name: {{.table.Name}}
+    comment: "{{.table.Comment}}"
+    backendPackage: {{.table.BackendPackage}}
+    frontendModule: {{.table.FrontendModule}}
+    templateCategory: {{.table.TemplateCategory}}
+    {{if IsNotEmpty .table.BusinessName}}businessName: {{.table.BusinessName}}{{end}}
+    {{if IsNotEmpty .table.FunctionName}}functionName: {{.table.FunctionName}}{{end}}
+    {{if IsNotEmpty .table.FunctionAuthor}}functionAuthor: {{.table.FunctionAuthor}}{{end}}
+    {{if IsNotEmpty .table.TreeCode}}treeCode: {{.table.TreeCode}}{{end}}
+    {{if IsNotEmpty .table.TreeParentCode}}treeParentCode: {{.table.TreeParentCode}}{{end}}
+    {{if IsNotEmpty .table.TreeName}}treeName: {{.table.TreeName}}{{end}}
+    overwrite: {{.table.Overwrite}}
+    sortColumn: {{.table.SortColumn}}
+    sortType: {{.table.SortType}}
+    showDetail: {{.table.ShowDetail}}         # 是否支持显示详情(本开关仅当生成前端页面时生效)
+    isRpc: {{.table.IsRpc}}             # 是否生成rpc服务方式的代码
+    separatePackage: {{.table.SeparatePackage}}   # 是否将每个表的代码生成到单独目录下
+    createTime: {{.table.CreateTime}}
+    updateTime: {{.table.UpdateTime}}
+columns:
+    {{range $index,$column := .table.Columns}}
+    {{$column.Name}}:
+        {{if IsNotEmpty $column.Sort}}sort: {{$column.Sort}}{{end}}
+        {{if IsNotEmpty $column.Comment}}comment: "{{$column.Comment}}"{{end}}
+        {{if IsNotEmpty $column.SqlType}}sqlType: {{$column.SqlType}}{{end}}
+        {{if IsNotEmpty $column.GoType}}goType: {{$column.GoType}}{{end}}
+        {{if IsNotEmpty $column.GoField}}goField: {{$column.GoField}}{{end}}
+        {{if IsNotEmpty $column.HtmlField}}htmlField: {{$column.HtmlField}}{{end}}
+        {{if IsNotEmpty $column.HtmlType}}htmlType: {{$column.HtmlType}}{{end}}
+        {{if IsNotEmpty $column.IsPk}}isPk: {{$column.IsPk}}{{end}}
+        {{if IsNotEmpty $column.IsIncrement}}isIncrement: {{$column.IsIncrement}}{{end}}
+        {{if IsNotEmpty $column.IsRequired}}isRequired: {{$column.IsRequired}}{{end}}
+        {{if IsNotEmpty $column.DictType}}dictType: {{$column.DictType}}{{end}}
+        {{if IsNotEmpty $column.RelatedTableName}}relatedTableName: {{$column.RelatedTableName}}{{end}}
+        {{if IsNotEmpty $column.RelatedValueColumnName}}relatedValueColumnName: {{$column.RelatedValueColumnName}}{{end}}
+        {{if IsNotEmpty $column.IsCascade}}isCascade: {{$column.IsCascade}}{{end}}
+        {{if IsNotEmpty $column.ParentColumnName}}parentColumnName: {{$column.ParentColumnName}}{{end}}
+        {{if IsNotEmpty $column.CascadeColumnName}}cascadeColumnName: {{$column.CascadeColumnName}}{{end}}
+    {{end}}
+listColumns:
+    {{range $index,$column := .table.ListColumns}}
+    {{$column.Name}}:
+        {{if IsNotEmpty $column.Sort}}sort: {{$column.Sort}}{{end}}
+        {{if IsNotEmpty $column.HtmlType}}htmlType: {{$column.HtmlType}}{{end}}
+        {{if IsNotEmpty $column.IsInlineEditable}}isInlineEditable: {{$column.IsInlineEditable}}{{end}}
+        {{if IsNotEmpty $column.MinWidth}}minWidth: {{$column.MinWidth}}{{end}}
+        {{if IsNotEmpty $column.IsFixed}}isFixed: {{$column.IsFixed}}{{end}}
+        {{if IsNotEmpty $column.IsOverflowTooltip}}isOverflowTooltip: {{$column.IsOverflowTooltip}}{{end}}
+    {{end}}
+addColumns:
+    {{range $index,$column := .table.AddColumns}}
+    {{$column.Name}}:
+        {{if IsNotEmpty $column.Sort}}sort: {{$column.Sort}}{{end}}
+        {{if IsNotEmpty $column.HtmlType}}htmlType: {{$column.HtmlType}}{{end}}
+    {{end}}
+editColumns:
+    {{range $index,$column := .table.EditColumns}}
+    {{$column.Name}}:
+        {{if IsNotEmpty $column.Sort}}sort: {{$column.Sort}}{{end}}
+        {{if IsNotEmpty $column.HtmlType}}htmlType: {{$column.HtmlType}}{{end}}
+        {{if IsNotEmpty $column.IsDisabled}}isDisabled: {{$column.IsDisabled}}{{end}}
+    {{end}}
+queryColumns:
+    {{range $index,$column := .table.QueryColumns}}
+    {{$column.Name}}:
+        {{if IsNotEmpty $column.Sort}}sort: {{$column.Sort}}{{end}}
+        {{if IsNotEmpty $column.HtmlType}}htmlType: {{$column.HtmlType}}{{end}}
+        {{if IsNotEmpty $column.QueryType}}queryType: {{$column.QueryType}}{{end}}
+    {{end}}
+detailColumns:
+    {{range $index,$column := .table.DetailColumns}}
+    {{$column.Name}}:
+        {{if IsNotEmpty $column.Sort}}sort: {{$column.Sort}}{{end}}
+        {{if IsNotEmpty $column.HtmlType}}htmlType: {{$column.HtmlType}}{{end}}
+        {{if IsNotEmpty $column.ColSpan}}colSpan: {{$column.ColSpan}}{{end}}
+        {{if IsNotEmpty $column.IsRowStart}}isRowStart: {{$column.IsRowStart}}{{end}}
+    {{end}}

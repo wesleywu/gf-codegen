@@ -1,0 +1,1101 @@
+<template>
+{{$lens := .table.Columns|len}}
+{{$treeParentCode := .table.TreeParentCode}}
+{{$treeCode := .table.TreeCode}}
+{{$treeName := .table.TreeName}}
+  <div class="app-container">
+    <el-form :model="queryParams" ref="queryForm" :inline="true" label-width="100px">
+      <el-row>
+    {{$colIndex := 0}}
+    {{range $index, $column := .table.QueryColumns}}
+      {{if and (ne $column.Name "created_by") (ne $column.Name "updated_by") (ne $column.Name "created_at") (ne $column.Name "updated_at") (ne $column.Name "deleted_at")}}
+        {{if eq $colIndex 2}}
+        <el-col :span="8" :class="!showAll ? 'colBlock' : 'colNone'">
+          <el-form-item>
+            <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
+            <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+            <el-button type="text" size="mini" @click="toggleSearch">
+              {{"{{"}} word {{"}}"}}
+              <i :class="showAll ? 'el-icon-arrow-up ': 'el-icon-arrow-down'"></i>
+            </el-button>
+          </el-form-item>
+        </el-col>
+        {{end}}
+        {{if eq $column.HtmlType "input" "textarea"}}
+        <el-col :span="8" {{if lt $colIndex 2}}class="colBlock"{{else}}:class="showAll ? 'colBlock' : 'colNone'"{{end}}>
+          <el-form-item label="{{$column.Comment}}" prop="{{$column.HtmlField}}">
+            <el-input
+                v-model="queryParams.{{$column.HtmlField}}{{if eq $column.QueryType "BETWEEN"}}[0]{{end}}"
+                placeholder="请输入{{$column.Comment}}"
+                clearable
+                size="small"
+                {{if eq $column.QueryType "BETWEEN"}}style="width:100px"{{end}}
+                @keyup.enter.native="handleQuery"
+            />
+            {{if eq $column.QueryType "BETWEEN"}} -
+            <el-input
+                v-model="queryParams.{{$column.HtmlField}}[1]"
+                placeholder="请输入{{$column.Comment}}"
+                clearable
+                size="small"
+                style="width:100px"
+                @keyup.enter.native="handleQuery"
+            />
+            {{end}}
+          </el-form-item>
+        </el-col>
+          {{$colIndex = ($colIndex | plus 1)}}
+        {{else if and (eq $column.HtmlType "select" "radio" "checkbox") (IsNotEmpty $column.Base.DictType) }}
+        <el-col :span="8" {{if lt $colIndex 2}}class="colBlock"{{else}}:class="showAll ? 'colBlock' : 'colNone'"{{end}}>
+          <el-form-item label="{{$column.Comment}}" prop="{{$column.HtmlField}}">
+            <el-select v-model="queryParams.{{$column.HtmlField}}" placeholder="请选择{{$column.Comment}}" clearable size="small">
+                <el-option
+                    v-for="dict in {{$column.HtmlField}}Options"
+                    :key="dict.key"
+                    :label="dict.value"
+                    :value="dict.key"
+                />
+            </el-select>
+          </el-form-item>
+        </el-col>
+          {{$colIndex = ($colIndex | plus 1)}}
+        {{else if eq $column.HtmlType "date"}}
+        <el-col :span="8" {{if lt $colIndex 2}}class="colBlock"{{else}}:class="showAll ? 'colBlock' : 'colNone'"{{end}}>
+          <el-form-item label="{{$column.Comment}}" prop="{{$column.HtmlField}}">
+            <el-date-picker
+                clearable size="small" style="width: 200px"
+                v-model="queryParams.{{$column.HtmlField}}"
+            {{if eq $column.QueryType "BETWEEN"}}
+                type="daterange"
+                range-separator="至"
+                start-placeholder="开始日期"
+                end-placeholder="结束日期"
+            {{else}}
+                type="date"
+                placeholder="选择{{$column.Comment}}"
+            {{end}}
+                value-format="yyyy-MM-dd">
+            </el-date-picker>
+          </el-form-item>
+        </el-col>
+          {{$colIndex = ($colIndex | plus 1)}}
+        {{else if eq $column.HtmlType "datetime"}}
+        <el-col :span="8" {{if lt $colIndex 2}}class="colBlock"{{else}}:class="showAll ? 'colBlock' : 'colNone'"{{end}}>
+          <el-form-item label="{{$column.Comment}}" prop="{{$column.HtmlField}}">
+            <el-date-picker
+                clearable size="small" style="width: 200px"
+                v-model="queryParams.{{$column.HtmlField}}"
+            {{if eq $column.QueryType "BETWEEN"}}
+                type="datetimerange"
+                range-separator="至"
+                start-placeholder="开始时间"
+                end-placeholder="结束时间"
+            {{else}}
+                type="datetime"
+                placeholder="选择{{$column.Comment}}"
+            {{end}}
+                value-format="yyyy-MM-dd HH:mm:ss">
+            </el-date-picker>
+          </el-form-item>
+        </el-col>
+          {{$colIndex = ($colIndex | plus 1)}}
+        {{else if and (eq $column.HtmlType "select" "radio" "checkbox") (IsNotEmpty $column.Base.CombinedHtmlTableClass)}}
+        <el-col :span="8" {{if lt $colIndex 2}}class="colBlock"{{else}}:class="showAll ? 'colBlock' : 'colNone'"{{end}}>
+          <el-form-item label="{{$column.Comment}}" prop="{{$column.HtmlField}}">
+            <el-select v-model="queryParams.{{$column.HtmlField}}" placeholder="请选择{{$column.Comment}}" clearable size="small" {{if $column.Base.IsCascadeParent}}@change="query{{$column.Name | CaseCamel}}Changed"{{end}} {{if not $column.Base.IsCascade}}@click.native="get{{$column.Base.CombinedHtmlTableClass}}{{if $column.Base.IsCascade}}Query{{end}}Items"{{end}}>
+              <el-option
+              {{if $column.Base.IsCascade}}
+                  v-for="item in {{$column.HtmlField}}QueryOptions"
+              {{else}}
+                  v-for="item in {{$column.HtmlField}}Options"
+              {{end}}
+                  :key="item.key"
+                  :label="item.value"
+                  :value="item.key"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
+          {{$colIndex = ($colIndex | plus 1)}}
+        {{else}}
+        <el-col :span="8" {{if lt $colIndex 2}}class="colBlock"{{else}}:class="showAll ? 'colBlock' : 'colNone'"{{end}}>
+          <el-form-item label="{{$column.Comment}}" prop="{{$column.HtmlField}}">
+            <el-select v-model="queryParams.{{$column.HtmlField}}" placeholder="请选择{{$column.Comment}}" clearable size="small">
+                <el-option label="请选择字典生成" value="" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+          {{$colIndex = ($colIndex | plus 1)}}
+        {{end}}
+      {{end}}
+    {{end}}
+    {{if gt $colIndex 2}}
+        <el-col :span="8" :class="showAll ? 'colBlock' : 'colNone'">
+          <el-form-item>
+            <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
+            <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+            <el-button type="text" size="mini" @click="toggleSearch">
+              {{"{{"}} word {{"}}"}}
+              <i :class="showAll ? 'el-icon-arrow-up ': 'el-icon-arrow-down'"></i>
+            </el-button>
+          </el-form-item>
+        </el-col>
+    {{else}}
+        <el-col :span="8" :class="colBlock">
+          <el-form-item>
+            <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
+            <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+    {{end}}
+      </el-row>
+    </el-form>
+
+    <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          icon="el-icon-plus"
+          size="mini"
+          @click="handleAdd"
+          v-hasPermi="['{{.table.PackageName}}/{{.table.RouteChildPath}}/add']"
+        >新增</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="success"
+          icon="el-icon-edit"
+          size="mini"
+          :disabled="single"
+          @click="handleUpdate"
+          v-hasPermi="['{{.table.PackageName}}/{{.table.RouteChildPath}}/edit']"
+        >修改</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="danger"
+          icon="el-icon-delete"
+          size="mini"
+          :disabled="multiple"
+          @click="handleDelete"
+          v-hasPermi="['{{.table.PackageName}}/{{.table.RouteChildPath}}/delete']"
+        >删除</el-button>
+      </el-col>
+    </el-row>
+
+    <el-table v-loading="loading" :data="{{.table.StructName}}List"
+        @selection-change="handleSelectionChange"
+        row-key="{{$treeCode}}"
+        default-expand-all
+        :tree-props="{children: 'children', hasChildren: 'hasChildren'}">
+      <el-table-column type="selection" width="55" align="center" />
+      {{range $index, $column := .table.ListColumns}}
+      {{if $column.Base.IsPk}}
+      <el-table-column label="{{$column.Comment}}" align="center" prop="{{$column.HtmlField}}"
+        {{if gt $column.MinWidth 0}}min-width="{{$column.MinWidth}}px"{{end}}
+        {{if $column.IsOverflowTooltip}}:show-overflow-tooltip="true"{{end}}
+        {{if $column.IsFixed}}fixed="left"{{end}} />
+      {{else if eq $column.HtmlType "date"}}
+      <el-table-column label="{{$column.Comment}}" align="center" prop="{{$column.HtmlField}}"
+        {{if gt $column.MinWidth 0}}min-width="{{$column.MinWidth}}px"{{end}}
+        {{if $column.IsOverflowTooltip}}:show-overflow-tooltip="true"{{end}}
+        {{if $column.IsFixed}}fixed="left"{{end}}>
+        <template slot-scope="scope">
+            <span>{{VueTag "{{"}} parseTime(scope.row.{{$column.HtmlField}}, '{y}-{m}-{d}') {{VueTag "}}"}}</span>
+        </template>
+      </el-table-column>
+      {{else if eq $column.HtmlType "datetime"}}
+      <el-table-column label="{{$column.Comment}}" align="center" prop="{{$column.HtmlField}}"
+        {{if gt $column.MinWidth 0}}min-width="{{$column.MinWidth}}px"{{end}}
+        {{if $column.IsOverflowTooltip}}:show-overflow-tooltip="true"{{end}}
+        {{if $column.IsFixed}}fixed="left"{{end}}>
+        <template slot-scope="scope">
+            <span>{{VueTag "{{"}} parseTime(scope.row.{{$column.HtmlField}}, '{y}-{m}-{d} {h}:{i}:{s}') {{VueTag "}}"}}</span>
+        </template>
+      </el-table-column>
+      {{else if eq $column.HtmlField "createdBy"}}
+      <el-table-column label="{{$column.Comment}}" align="center" prop="createdUser"
+        {{if gt $column.MinWidth 0}}min-width="{{$column.MinWidth}}px"{{end}}
+        {{if $column.IsOverflowTooltip}}:show-overflow-tooltip="true"{{end}}
+        {{if $column.IsFixed}}fixed="left"{{end}} />
+      {{else if eq $column.HtmlField "updatedBy"}}
+      <el-table-column label="{{$column.Comment}}" align="center" prop="updatedUser"
+        {{if gt $column.MinWidth 0}}min-width="{{$column.MinWidth}}px"{{end}}
+        {{if $column.IsOverflowTooltip}}:show-overflow-tooltip="true"{{end}}
+        {{if $column.IsFixed}}fixed="left"{{end}} />
+      {{else if eq $column.HtmlType "imagefile"}}
+      <el-table-column align="center" label="{{$column.Comment}}"
+        {{if gt $column.MinWidth 0}}min-width="{{$column.MinWidth}}px"{{end}}
+        {{if $column.IsOverflowTooltip}}:show-overflow-tooltip="true"{{end}}
+        {{if $column.IsFixed}}fixed="left"{{end}}>
+      <template slot-scope="scope">
+        <el-image
+          style="width: {{if gt $column.MinWidth 50}}{{$column.MinWidth}}{{else}}50{{end}}px; height: 50px"
+          v-if="!isEmpty(scope.row.{{$column.HtmlField}})"
+          :src="scope.row.{{$column.HtmlField}}|urlCorrection"
+          fit="contain"></el-image>
+      </template>
+      </el-table-column>
+      {{else if $column.IsInlineEditable}}
+      <el-table-column label="{{$column.Comment}}" align="center"
+        {{if gt $column.MinWidth 0}}min-width="{{$column.MinWidth}}px"{{end}}
+        {{if $column.IsOverflowTooltip}}:show-overflow-tooltip="true"{{end}}
+        {{if $column.IsFixed}}fixed="left"{{end}}>
+        <template slot-scope="scope">
+            <el-switch
+              v-model="scope.row.{{$column.HtmlField}}"
+              :active-value="1"
+              :inactive-value="0"
+              @change="{{$column.HtmlField}}Change(scope.row)"
+            ></el-switch>
+        </template>
+      </el-table-column>
+      {{else if IsNotEmpty $column.Base.CombinedHtmlField}}
+      <el-table-column label="{{$column.Comment}}" align="center" prop="{{$column.Base.CombinedHtmlField}}"
+        {{if IsNotEmpty $column.Base.DictType}}:formatter="{{$column.HtmlField}}Format"{{end}}
+        {{if gt $column.MinWidth 0}}min-width="{{$column.MinWidth}}px"{{end}}
+        {{if $column.IsOverflowTooltip}}:show-overflow-tooltip="true"{{end}}
+        {{if $column.IsFixed}}fixed="left"{{end}} />
+      {{else if IsNotEmpty $column.Base.DictType}}
+      <el-table-column label="{{$column.Comment}}" align="center" prop="{{$column.HtmlField}}" :formatter="{{$column.HtmlField}}Format"
+        {{if gt $column.MinWidth 0}}min-width="{{$column.MinWidth}}px"{{end}}
+        {{if $column.IsOverflowTooltip}}:show-overflow-tooltip="true"{{end}}
+        {{if $column.IsFixed}}fixed="left"{{end}} />
+      {{else if IsNotEmpty $column.HtmlField}}
+      <el-table-column label="{{$column.Comment}}" align="center" prop="{{$column.HtmlField}}"
+        {{if gt $column.MinWidth 0}}min-width="{{$column.MinWidth}}px"{{end}}
+        {{if $column.IsOverflowTooltip}}:show-overflow-tooltip="true"{{end}}
+        {{if $column.IsFixed}}fixed="left"{{end}} />
+      {{end}}
+    {{end}}
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+        <template slot-scope="scope">
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-edit"
+            @click="handleUpdate(scope.row)"
+            v-hasPermi="['{{.table.PackageName}}/{{.table.RouteChildPath}}/edit']"
+          >修改</el-button>
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-delete"
+            @click="handleDelete(scope.row)"
+            v-hasPermi="['{{.table.PackageName}}/{{.table.RouteChildPath}}/delete']"
+          >删除</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <!-- 添加或修改{{.table.FunctionName}}对话框 -->
+    <el-dialog :title="title" :visible.sync="open" width="800px" append-to-body :close-on-click-modal="false">
+      <el-form ref="form" :model="form" :rules="rules" label-width="80px">
+      {{range $index, $column := .table.EditColumns}}
+      {{if and (IsNotEmpty $treeParentCode) (eq $column.HtmlField $treeParentCode)}}
+      <el-form-item label="{{$column.Comment}}" prop="{{$treeParentCode}}">
+      <treeselect v-model="form.{{$treeParentCode}}" :options="{{$.table.StructName}}Options" :normalizer="normalizer" placeholder="请选择{{$column.Comment}}" />
+      </el-form-item>
+      {{else if eq $column.HtmlType "input"}}
+      <el-form-item label="{{$column.Comment}}" prop="{{$column.HtmlField}}">
+           <el-input v-model="form.{{$column.HtmlField}}" placeholder="请输入{{$column.Comment}}" />
+      </el-form-item>
+      {{else if eq $column.HtmlType "select" }}
+        {{if IsNotEmpty $column.Base.CombinedHtmlTableClass}}
+      <el-form-item label="{{$column.Comment}}" prop="{{$column.HtmlField}}">
+        <el-select v-model="form.{{$column.HtmlField}}" placeholder="请选择{{$column.Comment}}" {{if $column.IsDisabled}}v-bind:disabled="this.currentOp === 'edit'" {{end}} {{if $column.Base.IsCascadeParent}}@change="form{{$column.Name | CaseCamel}}Changed"{{end}} {{if not $column.Base.IsCascade}}@click.native="get{{$column.Base.CombinedHtmlTableClass}}{{if $column.Base.IsCascade}}Form{{end}}Items"{{end}}>
+            <el-option
+            {{if $column.Base.IsCascade}}
+                v-for="item in {{$column.HtmlField}}FormOptions"
+            {{else}}
+                v-for="item in {{$column.HtmlField}}Options"
+            {{end}}
+                :key="item.key"
+                :label="item.value"
+                :value="item.key"
+            ></el-option>
+        </el-select>
+      </el-form-item>
+        {{else if IsNotEmpty $column.Base.DictType}}
+      <el-form-item label="{{$column.Comment}}" prop="{{$column.HtmlField}}">
+        <el-select v-model="form.{{$column.HtmlField}}" placeholder="请选择{{$column.Comment}}" {{if $column.IsDisabled}}v-bind:disabled="this.currentOp === 'edit'" {{end}}>
+          <el-option
+            v-for="dict in {{$column.HtmlField}}Options"
+            :key="dict.key"
+            :label="dict.value"
+            {{if eq $column.GoType "Integer"}}
+            :value="parseInt(dict.key)"
+            {{else}}
+                :value="dict.key"
+            {{end}}
+          ></el-option>
+        </el-select>
+      </el-form-item>
+        {{else}}
+      <el-form-item label="{{$column.Comment}}" prop="{{$column.HtmlField}}">
+        <el-select v-model="form.{{$column.HtmlField}}" placeholder="请选择{{$column.Comment}}" {{if $column.IsDisabled}}v-bind:disabled="this.currentOp === 'edit'" {{end}}>
+          <el-option label="请选择字典生成" value="" />
+        </el-select>
+      </el-form-item>
+        {{end}}
+      {{else if eq $column.HtmlType "radio" }}
+      {{if IsNotEmpty $column.Base.DictType}}
+      <el-form-item label="{{$column.Comment}}" prop="{{$column.HtmlField}}">
+        <el-radio-group v-model="form.{{$column.HtmlField}}">
+          <el-radio
+            v-for="dict in {{$column.HtmlField}}Options"
+            :key="dict.key"
+            :label="dict.key"
+          >{{ VueTag "{{" }}dict.value {{VueTag "}}"}}</el-radio>
+        </el-radio-group>
+      </el-form-item>
+      {{else}}
+      <el-form-item label="{{$column.Comment}}" prop="{{$column.HtmlField}}">
+        <el-radio-group v-model="form.{{$column.HtmlField}}">
+           <el-radio>请选择字典生成</el-radio>
+        </el-radio-group>
+      </el-form-item>
+      {{end}}
+      {{else if eq $column.HtmlType "date"}}
+      <el-form-item label="{{$column.Comment}}" prop="{{$column.HtmlField}}">
+        <el-date-picker clearable size="small" style="width: 200px"
+          v-model="form.{{$column.HtmlField}}"
+          type="date"
+          value-format="yyyy-MM-dd"
+          placeholder="选择{{$column.Comment}}">
+        </el-date-picker>
+      </el-form-item>
+      {{else if eq $column.HtmlType "datetime"}}
+      <el-form-item label="{{$column.Comment}}" prop="{{$column.HtmlField}}">
+        <el-date-picker clearable size="small" style="width: 200px"
+          v-model="form.{{$column.HtmlField}}"
+          type="date"
+          value-format="yyyy-MM-dd"
+          placeholder="选择{{$column.Comment}}">
+        </el-date-picker>
+      </el-form-item>
+      {{else if eq $column.HtmlType "textarea"}}
+      <el-form-item label="{{$column.Comment}}" prop="{{$column.HtmlField}}">
+        <el-input v-model="form.{{$column.HtmlField}}" type="textarea" placeholder="请输入{{$column.Comment}}" />
+      </el-form-item>
+      {{else if eq $column.HtmlType "checkbox" }}
+      <el-form-item label="{{$column.Comment}}" prop="{{$column.HtmlField}}">
+        <el-checkbox-group v-model="form.{{$column.HtmlField}}">
+          <el-checkbox
+            v-for="dict in {{$column.HtmlField}}Options"
+            :key="dict.key"
+            :label="dict.key"
+          >{{ VueTag "{{" }}dict.value {{VueTag "}}"}}</el-checkbox>
+        </el-checkbox-group>
+      </el-form-item>
+      {{else if eq $column.HtmlType "richtext"}}
+      <el-form-item label="{{$column.Comment}}">
+        <Editor ref="cke" v-model="form.{{$column.HtmlField}}" @set-edit-content="set{{$column.GoField}}EditContent"/>
+      </el-form-item>
+      {{else if eq $column.HtmlType "imagefile"}}
+      <el-form-item label="{{$column.Comment}}" prop="{{$column.HtmlField}}">
+        <el-upload
+          v-loading="upLoading{{$column.GoField}}"
+          :action="apiUrl+'/system/upload/upImg'"
+          :before-upload="beforeAvatarUpload{{$column.GoField}}"
+          :data="setUpData()"
+          :on-success="handleAvatarSuccess{{$column.GoField}}"
+          :show-file-list="false"
+          class="avatar-uploader"
+          name="file"
+        >
+          <img v-if="imageUrl{{$column.GoField}}" :src="imageUrl{{$column.GoField}}" class="avatar">
+          <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+        </el-upload>
+      </el-form-item>
+      {{else if eq $column.HtmlType "images"}}
+      <el-form-item label="{{$column.Comment}}" prop="{{$column.HtmlField}}" >
+        <up-imgs :action="apiUrl+'/system/upload/upImg'" v-model="form.{{$column.HtmlField}}" @setUpImgList="setUpImgList{{$column.GoField}}"></up-imgs>
+      </el-form-item>
+      {{else if eq $column.HtmlType "file"}}
+      <el-form-item label="{{$column.Comment}}" prop="{{$column.HtmlField}}" >
+        <up-file :action="apiUrl+'/system/upload/upFile'" v-model="form.{{$column.HtmlField}}" @set-up-file-list="setUpFileList{{$column.GoField}}" :limit="1"></up-file>
+      </el-form-item>
+      {{else if eq $column.HtmlType "files"}}
+      <el-form-item label="{{$column.Comment}}" prop="{{$column.HtmlField}}" >
+        <up-file :action="apiUrl+'/system/upload/upFile'" v-model="form.{{$column.HtmlField}}" @set-up-file-list="setUpFileList{{$column.GoField}}" :limit="10"></up-file>
+      </el-form-item>
+      {{end}}
+      {{end}}
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="submitForm">确 定</el-button>
+        <el-button @click="cancel">取 消</el-button>
+      </div>
+    </el-dialog>
+  </div>
+</template>
+
+<script>
+
+{{$tokenImp := false}}
+{{$imgsImp := false}}
+{{$editImp := false }}
+{{$fileImp := false}}
+{{$getUserList:=false}}
+
+{{range $index,$column:=.table.Columns}}
+{{if eq $column.HtmlType "richtext"}}
+{{$editImp = true}}
+{{else if eq $column.HtmlType "imagefile"}}
+{{$tokenImp = true}}
+{{else if eq $column.HtmlType "images"}}
+{{$imgsImp = true}}
+{{else if eq $column.HtmlType "file" "files"}}
+{{$fileImp = true}}
+{{end}}
+{{if eq $column.HtmlField "createdBy" "updatedBy"}}
+{{$getUserList = true}}
+{{end}}
+{{end}}
+
+{{$plugin:=""}}
+{{if ContainsI $.table.BackendPackage "plugins"}}
+{{$plugin = "plugins/"}}
+{{end}}
+
+
+import {
+    list{{.table.ClassName}},
+    get{{.table.ClassName}},
+    del{{.table.ClassName}},
+    add{{.table.ClassName}},
+    update{{.table.ClassName}},
+    {{range $index,$column:= .table.ListColumns}}
+    {{if and $column.IsInlineEditable}}
+    change{{$.table.ClassName}}{{$column.GoField}},
+    {{end}}
+    {{end}}
+    {{range $index,$relatedTable := .table.AllRelatedTables}}
+    list{{$relatedTable.CombinedClassName}},
+    {{end}}
+    {{if $getUserList}}
+    getUserList,
+    {{end}}
+} from "@/api/{{$plugin}}{{.table.FrontendPath}}/{{.table.FrontendFileName}}";
+import Treeselect from "@riophae/vue-treeselect";
+import "@riophae/vue-treeselect/dist/vue-treeselect.css";
+
+{{if $editImp}}
+import Editor from "@/components/CKeditor";
+{{end}}
+{{if $tokenImp}}
+import { getToken } from '@/utils/auth'
+{{end}}
+{{if $imgsImp}}
+import upImgs from "@/components/upImgs"
+{{end}}
+{{if $fileImp}}
+import upFile from "@/components/upfile"
+{{end}}
+
+
+export default {
+  name: "{{.table.ClassName}}",
+  components: {
+    Treeselect,
+    {{if $editImp}}
+    Editor,
+    {{end}}
+    {{if $imgsImp}}
+    upImgs,
+    {{end}}
+    {{if $fileImp}}
+    upFile,
+    {{end}}
+  },
+  data() {
+    return {
+      // 遮罩层
+      loading: true,
+      // 选中数组
+      ids: [],
+      // 非单个禁用
+      single: true,
+      // 非多个禁用
+      multiple: true,
+      // 总条数
+      total: 0,
+      // 是否显示所有搜索选项
+      showAll: false,
+      // {{.table.FunctionName}}表格数据
+      {{.table.StructName}}List: [],
+      // {{.table.FunctionName}}树选项
+      {{.table.StructName}}Options: [],
+      // 弹出层标题
+      title: "",
+      // 是否显示弹出层
+      open: false,
+      {{range $index, $column := .table.Columns}}
+      {{if IsNotEmpty $column.DictType}}
+      // {{$column.HtmlField}}Options字典数据
+      {{$column.HtmlField}}Options: [],
+      {{else if IsNotEmpty $column.RelatedTableName}}
+      // {{$column.HtmlField}}Options关联表数据
+      {{$column.HtmlField}}Options: [],
+      {{else if eq $column.HtmlType "imagefile"}}
+       //图片上传地址
+       imageUrl{{$column.GoField}}: '',
+       //上传加载
+       upLoading{{$column.GoField}}: false,
+      {{end}}
+      {{end}}
+      {{/* 虚拟字段的下拉框内结果数据 */}}
+      {{range $index, $column := .table.VirtualColumns}}
+      {{if IsNotEmpty $column.DictType}}
+      // {{$column.HtmlField}}Options字典数据
+      {{$column.HtmlField}}Options: [],
+      {{else if IsNotEmpty $column.CombinedHtmlTableClass}}
+        {{if $column.IsCascade }}
+      // {{$column.HtmlField}}QueryOptions关联表数据
+      {{$column.HtmlField}}QueryOptions: [],
+      // {{$column.HtmlField}}FormOptions关联表数据
+      {{$column.HtmlField}}FormOptions: [],
+        {{else}}
+      // {{$column.HtmlField}}Options关联表数据
+      {{$column.HtmlField}}Options: [],
+        {{end}}
+      {{else if eq $column.HtmlType "imagefile"}}
+       //图片上传地址
+       imageUrl{{$column.GoField}}: '',
+       //上传加载
+       upLoading{{$column.GoField}}: false,
+      {{end}}
+      {{end}}
+      // 查询参数
+      queryParams: {
+        pageNum: 1,
+        pageSize: 10,{{range $index, $column := .table.QueryColumns}}
+        {{if eq $column.QueryType "BETWEEN"}}
+        {{$column.HtmlField}}: [],
+        {{else}}
+        {{$column.HtmlField}}: undefined,
+        {{end}}{{end}}
+      },
+      // 表单参数
+      form: {
+        {{range $index, $column := .table.Columns}}
+        {{if eq $column.HtmlType "radio"}}
+        {{$column.HtmlField}}: false ,
+        {{else if eq $column.HtmlType "checkbox"}}
+        {{$column.HtmlField}}: [] ,
+        {{else}}
+        {{$column.HtmlField}}: undefined,
+        {{end}}
+        {{end}}
+        {{range $ti, $relatedTable := .table.RelatedTables}}
+        {{$relatedTable.JsonNameWhenRelated}}: {},
+        {{end}}
+      },
+      // 表单校验
+      rules: { {{range $index, $column := .table.Columns}}{{if $column.IsRequired}}
+        {{$column.HtmlField}} : [
+          { required: true, message: "{{$column.Comment}}不能为空", trigger: "blur" }
+        ]{{if ne $lens $index}},{{end}}{{end}}{{end}}
+      }
+    };
+  },
+  computed: {
+    word: function() {
+      if(this.showAll === false) {
+        //对文字进行处理
+        return "展开搜索";
+      } else {
+        return "收起搜索";
+      }
+    }
+  },
+  created() {
+    {{range $index, $column := .table.Columns}}
+    {{if IsNotEmpty $column.DictType}}
+    this.getDicts("{{$column.DictType}}").then(response => {
+      this.{{$column.HtmlField}}Options = response.data.values||[];
+    });
+    {{end}}
+    {{end}}
+    {{range $index, $column := .table.VirtualColumns}}
+    {{if IsNotEmpty $column.DictType}}
+    this.getDicts("{{$column.DictType}}").then(response => {
+      this.{{$column.HtmlField}}Options = response.data.values||[];
+    });
+    {{end}}
+    {{end}}
+
+    this.getList();
+  },
+  methods: {
+    toggleSearch() {
+      this.showAll = !this.showAll;
+    },
+    {{$setUpData:=true}}
+  {{range $index, $column := .table.QueryColumns}}
+    {{if and ($column.Base.IsCascade) (IsNotEmpty $column.Base.CombinedHtmlTableClass)}}
+    query{{$column.Base.ParentColumnName | CaseCamel}}Changed (e) {
+      if (e) {
+        this.{{$column.HtmlField}}QueryOptions = []
+        this.get{{$column.Base.CombinedHtmlTableClass}}QueryItems({ {{$column.Base.CascadeColumnName | CaseCamelLower}}: e })
+      }
+    },
+    {{end}}
+  {{end}}
+  {{range $index, $column := .table.EditColumns}}
+    {{if and ($column.Base.IsCascade) (IsNotEmpty $column.Base.CombinedHtmlTableClass)}}
+    form{{$column.Base.ParentColumnName | CaseCamel}}Changed (e) {
+      if (e) {
+        this.{{$column.HtmlField}}FormOptions = []
+        this.get{{$column.Base.CombinedHtmlTableClass}}FormItems({ {{$column.Base.CascadeColumnName | CaseCamelLower}}: e })
+      }
+    },
+    {{end}}
+  {{end}}
+  {{/* 循环虚拟字段，处理关联、级联的相关函数 */}}
+  {{range $index, $column := .table.VirtualColumns}}
+    {{if IsNotEmpty $column.CombinedHtmlTableClass}}
+      {{if $column.IsCascade}}
+    //关联{{$column.CombinedHtmlTableClass}}表选项
+    get{{$column.CombinedHtmlTableClass}}QueryItems(option) {
+      if (this.{{$column.HtmlField}}QueryOptions && this.{{$column.HtmlField}}QueryOptions.length > 0) {
+        return
+      }
+      this.getItems(list{{$column.CombinedHtmlTableClass}}, Object.assign(option, {pageSize:10000})).then(res => {
+        this.{{$column.HtmlField}}QueryOptions = this.setItems(res, '{{$column.RelatedKeyColumn.HtmlField}}', '{{$column.RelatedValueColumnName | CaseCamelLower}}')
+        this.queryParams.{{$column.HtmlField}} = ""
+        {{if $column.IsCascadeParent}}{{range $childI, $childColumnName := $column.CascadeChildrenColumns.Slice}}
+        this.queryParams.{{$childColumnName | CaseCamelLower}} = ""
+        this.{{$childColumnName | CaseCamelLower}}QueryOptions = []
+        {{end}}{{end}}
+      })
+    },
+    get{{$column.CombinedHtmlTableClass}}FormItems(option) {
+      if (this.{{$column.HtmlField}}FormOptions && this.{{$column.HtmlField}}FormOptions.length > 0) {
+        return
+      }
+      this.getItems(list{{$column.CombinedHtmlTableClass}}, Object.assign(option, {pageSize:10000})).then(res => {
+        this.{{$column.HtmlField}}FormOptions = this.setItems(res, '{{$column.RelatedKeyColumn.HtmlField}}', '{{$column.RelatedValueColumnName | CaseCamelLower}}')
+        this.form.{{$column.HtmlField}} = ""
+        {{if $column.IsCascadeParent}}{{range $childI, $childColumnName := $column.CascadeChildrenColumns.Slice}}
+        this.form.{{$childColumnName | CaseCamelLower}} = ""
+        this.{{$childColumnName | CaseCamelLower}}FormOptions = []
+        {{end}}{{end}}
+      })
+    },
+      {{else}}
+        {{if IsNotEmpty $column.RelatedValueColumnName}}
+    //关联{{$column.CombinedHtmlTableClass}}表选项
+    get{{$column.CombinedHtmlTableClass}}Items() {
+      if (this.{{$column.HtmlField}}Options && this.{{$column.HtmlField}}Options.length > 0) {
+        return
+      }
+      this.getItems(list{{$column.CombinedHtmlTableClass}}, {pageSize:10000}).then(res => {
+        this.{{$column.HtmlField}}Options = this.setItems(res, '{{$column.RelatedKeyColumn.HtmlField}}', '{{$column.RelatedValueColumnName | CaseCamelLower}}')
+      })
+    },
+        {{end}}
+      {{end}}
+    {{end}}
+  {{end}}
+  {{/* 循环真实字段，处理关联、级联、图片上传、文件上传的相关函数 */}}
+  {{range $index, $column := .table.Columns}}
+    {{if IsNotEmpty $column.CombinedHtmlTableClass}}
+      {{if $column.IsCascade}}
+    //关联{{$column.CombinedHtmlTableClass}}表选项
+    get{{$column.CombinedHtmlTableClass}}QueryItems(option) {
+      if (this.{{$column.HtmlField}}QueryOptions && this.{{$column.HtmlField}}QueryOptions.length > 0) {
+        return
+      }
+      this.getItems(list{{$column.CombinedHtmlTableClass}}, Object.assign(option, {pageSize:10000})).then(res => {
+        this.{{$column.HtmlField}}QueryOptions = this.setItems(res, '{{$column.RelatedKeyColumn.HtmlField}}', '{{$column.RelatedValueColumnName | CaseCamelLower}}')
+        this.queryParams.{{$column.HtmlField}} = ""
+        {{if $column.IsCascadeParent}}{{range $childI, $childColumnName := $column.CascadeChildrenColumns.Slice}}
+        this.queryParams.{{$childColumnName | CaseCamelLower}} = ""
+        this.{{$childColumnName | CaseCamelLower}}QueryOptions = []
+        {{end}}{{end}}
+      })
+    },
+    get{{$column.CombinedHtmlTableClass}}FormItems(option) {
+      if (this.{{$column.HtmlField}}FormOptions && this.{{$column.HtmlField}}FormOptions.length > 0) {
+        return
+      }
+      this.getItems(list{{$column.CombinedHtmlTableClass}}, Object.assign(option, {pageSize:10000})).then(res => {
+        this.{{$column.HtmlField}}FormOptions = this.setItems(res, '{{$column.RelatedKeyColumn.HtmlField}}', '{{$column.RelatedValueColumnName | CaseCamelLower}}')
+        this.form.{{$column.HtmlField}} = ""
+        {{if $column.IsCascadeParent}}{{range $childI, $childColumnName := $column.CascadeChildrenColumns.Slice}}
+        this.form.{{$childColumnName | CaseCamelLower}} = ""
+        this.{{$childColumnName | CaseCamelLower}}FormOptions = []
+        {{end}}{{end}}
+      })
+    },
+      {{else}}
+    //关联{{$column.CombinedHtmlTableClass}}表选项
+    get{{$column.CombinedHtmlTableClass}}Items() {
+      if (this.{{$column.HtmlField}}Options && this.{{$column.HtmlField}}Options.length > 0) {
+        return
+      }
+      this.getItems(list{{$column.CombinedHtmlTableClass}}, {pageSize:10000}).then(res => {
+        this.{{$column.HtmlField}}Options = this.setItems(res, '{{$column.RelatedKeyColumn.HtmlField}}', '{{$column.RelatedValueColumnName | CaseCamelLower}}')
+      })
+    },
+      {{end}}
+    {{else if eq $column.HtmlType "richtext"}}
+    //富文本编辑器{{$column.Comment}}
+    set{{$column.GoField}}EditContent(data) {
+      this.form.{{$column.HtmlField}} = data
+    },
+    {{else if eq $column.HtmlType "imagefile"}}
+    //单图上传{{$column.Comment}}
+    handleAvatarSuccess{{$column.GoField}}(res, file) {
+      if (res.code === 0) {
+        this.imageUrl{{$column.GoField}} = URL.createObjectURL(file.raw)
+        this.form.{{$column.HtmlField}} = res.data.fileInfo.fileUrl
+      } else {
+        this.msgError(res.msg)
+      }
+      this.upLoading{{$column.GoField}} = false
+    },
+    beforeAvatarUpload{{$column.GoField}}(file) {
+      this.upLoading{{$column.GoField}} = true
+      return true
+    },
+    {{if $setUpData}}
+    setUpData() {
+      return { token: getToken() }
+    },
+    {{$setUpData = false}}
+    {{end}}
+    {{else if eq $column.HtmlType "images"}}
+    setUpImgList{{$column.GoField}}(data){
+        this.form.{{$column.HtmlField}} = data
+    },
+    {{else if eq $column.HtmlType "file" "files"}}
+    setUpFileList{{$column.GoField}}(data){
+        this.form.{{$column.HtmlField}} = data
+    },
+    {{end}}
+    {{end}}
+    {{range $index, $column := .table.ListColumns}}
+      {{if $column.IsInlineEditable}}
+    // {{$column.Comment}}修改
+    {{$column.HtmlField}}Change(row) {
+      let text = row.{{$column.HtmlField}} === 1 ? "启用" : "停用";
+      this.$confirm('确认要"' + text + '"：吗?', "警告", {
+          confirmButtonText: "确定",
+          cancelButtonText: "取消",
+          type: "warning"
+        }).then(function() {
+          return change{{$.table.ClassName}}{{$column.GoField}}(row.{{$.table.PkColumn.HtmlField}}, row.{{$column.HtmlField}});
+        }).then(() => {
+          this.msgSuccess(text + "成功");
+        }).catch(function() {
+          row.{{$column.HtmlField}} =row.{{$column.HtmlField}} === 0 ?1 : 0;
+        });
+    },
+      {{end}}
+    {{end}}
+    getAllRelatedTableItems() {
+      {{range $index, $column := .table.Columns}}
+      {{if and (IsNotEmpty $column.CombinedHtmlTableClass) (not $column.IsCascade)}}
+      this.get{{$column.CombinedHtmlTableClass}}Items()
+      {{end}}
+      {{end}}
+    },
+    /** 查询{{.table.FunctionName}}列表 */
+    getList() {
+      this.loading = true;
+      list{{.table.ClassName}}(this.queryParams).then(response => {
+        let list = this.handleTree(response.data.list||[], "{{$treeCode}}", "{{$treeParentCode}}");
+        {{$hasCreatedBy := false}}
+        {{$hasUpdatedBy := false}}
+        {{range $index,$column := .table.ListColumns}}
+        {{if eq $column.HtmlField "createdBy"}}
+        {{$hasCreatedBy = true}}
+        {{end}}
+        {{if eq $column.HtmlField "updatedBy"}}
+        {{$hasUpdatedBy = true}}
+        {{end}}
+        {{end}}
+        {{if or $hasCreatedBy $hasUpdatedBy}}
+        let listUid = [];
+        {{end}}
+        {{if and $hasCreatedBy $hasUpdatedBy}}
+        list.map(item=>{
+            listUid.push(item.createdBy,item.updatedBy)
+        });
+        {{else if $hasCreatedBy}}
+        listUid = list.map(item=>{
+            return item.createdBy
+        });
+        {{else if $hasUpdatedBy}}
+        listUid = list.map(item=>{
+            return item.updatedBy
+        });
+        {{end}}
+        {{if or $hasCreatedBy $hasUpdatedBy}}
+        getUserList(listUid).then(response =>{
+            let users = response.data||[]
+            list.map(item=>{
+                users.forEach(user=>{
+                    {{if $hasCreatedBy}}
+                    if(item.createdBy==user.id){
+                        item.createdUser = user.userNickname
+                    }
+                    {{end}}
+                    {{if $hasUpdatedBy}}
+                    if(item.updatedBy==user.id){
+                        item.updatedUser = user.userNickname
+                    }
+                    {{end}}
+                })
+            })
+            this.{{.table.StructName}}List = list;
+        })
+        {{else}}
+        this.{{.table.StructName}}List = list;
+        {{end}}
+        this.loading = false;
+      });
+    },
+    /** 转换{{.table.FunctionName}}数据结构 */
+    normalizer(node) {
+      if (node.children && !node.children.length) {
+        delete node.children;
+      }
+      return {
+        id: node.{{.table.TreeCode}},
+        label: node.{{.table.TreeName}},
+        children: node.children
+      };
+    },
+    /** 查询{{.table.FunctionName}}下拉树结构 */
+    getTreeselect() {
+      list{{.table.ClassName}}(this.queryParams).then(response => {
+        this.{{.table.StructName}}Options = [];
+        const data = { {{.table.TreeCode}}: 0, {{.table.TreeName}}: '顶级节点', children: [] };
+        data.children = this.handleTree(response.data.list||[], "{{.table.TreeCode}}", "{{.table.TreeParentCode}}");
+        this.{{.table.StructName}}Options.push(data);
+      });
+    },
+    {{range $index, $column := .table.Columns}}
+    {{if IsNotEmpty $column.DictType}}
+    {{if eq $column.HtmlType "checkbox"}}
+    // {{$column.Comment}}字典翻译
+    {{$column.HtmlField}}Format(row, column) {
+      let {{$column.HtmlField}} = row.{{$column.HtmlField}}.split(",")
+      let data = [];
+      {{$column.HtmlField}}.map(item=>{
+        data.push(this.selectDictLabel(this.{{$column.HtmlField}}Options, item))
+      })
+      return data.join(",")
+    },
+    {{else}}
+    // {{$column.Comment}}字典翻译
+    {{$column.HtmlField}}Format(row, column) {
+      return this.selectDictLabel(this.{{$column.HtmlField}}Options, row.{{$column.HtmlField}});
+    },
+    {{end}}
+    {{end}}
+    {{end}}
+    {{range $index, $column := .table.VirtualColumns}}
+    {{if IsNotEmpty $column.DictType}}
+    {{if eq $column.HtmlType "checkbox"}}
+    // {{$column.Comment}}字典翻译
+    {{$column.HtmlField}}Format(row, column) {
+      let {{$column.HtmlField}} = row.{{$column.CombinedHtmlField}}.split(",")
+      let data = [];
+      {{$column.HtmlField}}.map(item=>{
+        data.push(this.selectDictLabel(this.{{$column.HtmlField}}Options, item))
+      })
+      return data.join(",")
+    },
+    {{else}}
+    // {{$column.Comment}}字典翻译
+    {{$column.HtmlField}}Format(row, column) {
+      return this.selectDictLabel(this.{{$column.HtmlField}}Options, row.{{$column.CombinedHtmlField}});
+    },
+    {{end}}
+    {{end}}
+    {{end}}
+    // 取消按钮
+    cancel() {
+      this.open = false;
+      this.reset();
+    },
+    // 表单重置
+    reset() {
+      this.form = {
+        {{range $index, $column := .table.AddColumns}}
+        {{if eq $column.HtmlType "radio"}}
+        {{$column.HtmlField}}: false {{if ne $lens $index}},{{end}}
+        {{else if eq $column.HtmlType "checkbox"}}
+        {{$column.HtmlField}}: [] {{if ne $lens $index}},{{end}}
+        {{else}}
+        {{$column.HtmlField}}: undefined{{if ne $lens $index}},{{end}}{{end}}{{end}}
+      };
+      {{range $index, $column := .table.Columns}}
+      {{if eq $column.HtmlType "imagefile"}}
+      this.imageUrl{{$column.GoField}} = ''
+      {{end}}
+      {{end}}
+      this.resetForm("form");
+    },
+    /** 搜索按钮操作 */
+    handleQuery() {
+      this.queryParams.pageNum = 1;
+      this.getList();
+    },
+    /** 重置按钮操作 */
+    resetQuery() {
+      this.resetForm("queryForm");
+      this.handleQuery();
+    },
+    // 多选框选中数据
+    handleSelectionChange(selection) {
+      this.ids = selection.map(item => item.{{.table.PkColumn.HtmlField}})
+      this.single = selection.length!=1
+      this.multiple = !selection.length
+    },
+    /** 新增按钮操作 */
+    handleAdd() {
+      this.reset();
+      this.getTreeselect()
+      this.open = true;
+      this.title = "添加{{.table.FunctionName}}";
+    },
+    {{if eq .table.ShowDetail "true"}}
+    /** 详情按钮操作 */
+    handleView(row) {
+      this.reset();
+      const {{.table.PkColumn.HtmlField}} = row.{{.table.PkColumn.HtmlField}} || this.ids
+      get{{.table.ClassName}}({{.table.PkColumn.HtmlField}}).then(response => {
+        let data = response.data;
+        {{range $index, $column := .table.Columns}}
+        {{if eq $column.HtmlType "checkbox"}}
+        data.{{$column.HtmlField}} = data.{{$column.HtmlField}}.split(",")
+        {{else if eq $column.HtmlType "radio" "select"}}
+        data.{{$column.HtmlField}} = ''+data.{{$column.HtmlField}}
+        {{else if eq $column.HtmlType "imagefile"}}
+        //单图地址赋值
+        this.imageUrl{{$column.GoField}} = data.{{$column.HtmlField}} ? this.getUpFileUrl(process.env.VUE_APP_BASE_API,data.{{$column.HtmlField}}) : ''
+        {{else if eq $column.HtmlType "images" "file" "files"}}
+        data.{{$column.HtmlField}} =data.{{$column.HtmlField}} || []
+        {{end}}
+        {{end}}
+        this.form = data;
+        this.detail = true;
+        this.title = "{{.table.FunctionName}}详情";
+      });
+    },
+    {{end}}
+    /** 修改按钮操作 */
+    handleUpdate(row) {
+      this.reset();
+      this.getTreeselect()
+      const {{.table.PkColumn.HtmlField}} = row.{{.table.PkColumn.HtmlField}} || this.ids
+      get{{.table.ClassName}}({{.table.PkColumn.HtmlField}}).then(response => {
+        let data = response.data;
+        {{range $index, $column := .table.Columns}}
+        {{if eq $column.HtmlType "checkbox"}}
+        data.{{$column.HtmlField}} = data.{{$column.HtmlField}}.split(",")
+        {{else if eq $column.HtmlType "radio" "select"}}
+        data.{{$column.HtmlField}} = ''+data.{{$column.HtmlField}}
+        {{else if eq $column.HtmlType "imagefile"}}
+        //单图地址赋值
+        this.imageUrl{{$column.GoField}} = data.{{$column.HtmlField}} ? this.getUpFileUrl(process.env.VUE_APP_BASE_API,data.{{$column.HtmlField}}) : ''
+        {{else if eq $column.HtmlType "images" "file" "files"}}
+        data.{{$column.HtmlField}} =data.{{$column.HtmlField}} || []
+        {{end}}
+        {{end}}
+        this.form = data;
+        this.open = true;
+        this.title = "修改{{.table.FunctionName}}";
+      });
+    },
+    /** 提交按钮 */
+    submitForm: function() {
+      this.$refs["form"].validate(valid => {
+        if (valid) {
+          if (this.form.{{.table.PkColumn.HtmlField}} != undefined) {
+            update{{.table.ClassName}}(this.form).then(response => {
+              if (response.code === 0) {
+                this.msgSuccess("修改成功");
+                this.open = false;
+                this.getList();
+              } else {
+                this.msgError(response.msg);
+              }
+            });
+          } else {
+            add{{.table.ClassName}}(this.form).then(response => {
+              if (response.code === 0) {
+                this.msgSuccess("新增成功");
+                this.open = false;
+                this.getList();
+              } else {
+                this.msgError(response.msg);
+              }
+            });
+          }
+        }
+      });
+    },
+    /** 删除按钮操作 */
+    handleDelete(row) {
+      const {{.table.PkColumn.HtmlField}}s = row.{{.table.PkColumn.HtmlField}} || this.ids;
+      this.$confirm('是否确认删除{{.table.FunctionName}}编号为"' + {{.table.PkColumn.HtmlField}}s + '"的数据项?', "警告", {
+          confirmButtonText: "确定",
+          cancelButtonText: "取消",
+          type: "warning"
+        }).then(function() {
+          return del{{.table.ClassName}}({{.table.PkColumn.HtmlField}}s);
+        }).then(() => {
+          this.getList();
+          this.msgSuccess("删除成功");
+        }).catch(function() {});
+    }
+  }
+};
+</script>
+
+
+<style>
+{{range $index,$column:=.table.Columns}}
+{{if eq $column.HtmlType "imagefile"}}
+.avatar-uploader .el-upload {
+  border: 1px dashed #d9d9d9;
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.avatar-uploader .el-upload:hover {
+  border-color: #409EFF;
+}
+
+.avatar-uploader-icon {
+  font-size: 28px;
+  color: #8c939d;
+  width: 178px;
+  height: 178px;
+  line-height: 178px;
+  text-align: center;
+}
+
+.avatar {
+  width: 178px;
+  height: 178px;
+  display: block;
+}
+{{end}}
+{{end}}
+.colBlock {
+  display: block;
+}
+.colNone {
+  display: none;
+}
+</style>

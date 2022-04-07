@@ -1,0 +1,182 @@
+syntax = "proto3";
+package {{.table.PackageNameProto}};
+// necessary
+option go_package = "app/{{.table.PackageName}}{{if .table.SeparatePackage}}/{{.table.GoFileName}}{{end}}/model";
+
+// The {{.table.ClassName}} service definition.
+service {{.table.ClassName}} {
+  rpc GetList     ({{.table.ClassName}}ListReq) returns ({{.table.ClassName}}ListRes){}
+  rpc GetInfoById ({{.table.ClassName}}InfoReq) returns ({{.table.ClassName}}InfoRes) {}
+  rpc Add         ({{.table.ClassName}}AddReq) returns ({{.table.ClassName}}AddRes) {}
+  rpc Edit        ({{.table.ClassName}}EditReq) returns ({{.table.ClassName}}EditRes) {}
+  rpc DeleteByIds ({{.table.ClassName}}DeleteReq) returns ({{.table.ClassName}}DeleteRes) {}
+}
+
+// {{.table.ClassName}}ListReq 分页请求参数
+message {{.table.ClassName}}ListReq {
+	uint32  pageNum  = 1;
+	uint32  pageSize = 2;
+	string  orderBy  = 3;
+	{{$ordinal := 3}}
+    {{range $index, $column := .table.QueryColumns}}
+    {{$ordinal = ($ordinal | plus 1)}}
+    {{if eq $column.QueryType "BETWEEN"}}repeated{{end}} {{if or (eq $column.GoType "Time") (eq $column.GoType "int") (eq $column.GoType "int64") (eq $column.GoType "uint") (eq $column.GoType "uint64") (eq $column.GoType "float") (eq $column.GoType "float64") (eq $column.GoType "bool")}}string{{else}}{{$column.Base.ProtoType}}{{end}} {{$column.GoField | CaseCamelLower}} = {{$ordinal}};
+    {{end}}
+}
+
+// {{.table.ClassName}}ListRes 分页返回结果
+message {{.table.ClassName}}ListRes {
+	uint64 total       = 1;
+	uint32 currentPage = 2;
+	repeated {{.table.ClassName}}Item list = 3;
+}
+
+// {{.table.ClassName}}Item 列表返回结果
+message {{.table.ClassName}}Item {
+  {{$ordinal := 0}}
+  {{if eq .table.TemplateCategory "tree"}}
+    {{range $index, $column := .table.Columns}}
+      {{if or (eq $column.HtmlField $.table.TreeCode) (eq $column.HtmlField $.table.TreeParentCode) (eq $column.HtmlField $.table.TreeName) }}
+    {{$ordinal = ($ordinal | plus 1)}}
+    {{$column.ProtoType}} {{$column.GoField | CaseCamelLower}} = {{$ordinal}};
+      {{end}}
+    {{end}}
+    {{range $index, $column := .table.ListColumns}}
+      {{if and (ne $column.HtmlField $.table.TreeCode) (ne $column.HtmlField $.table.TreeParentCode) (ne $column.HtmlField $.table.TreeName) }}
+    {{$ordinal = ($ordinal | plus 1)}}
+    {{$column.Base.ProtoType}} {{$column.GoField | CaseCamelLower}} = {{$ordinal}};
+      {{end}}
+    {{end}}
+  {{else}}
+    {{range $index, $column := .table.ListColumns}}
+    {{$ordinal = ($ordinal | plus 1)}}
+    {{$column.Base.ProtoType}} {{$column.GoField | CaseCamelLower}} = {{$ordinal}};
+    {{end}}
+  {{end}}
+  {{range $index, $column := .table.FkColumnsNotInList}}
+    {{$ordinal = ($ordinal | plus 1)}}
+    {{$column.ProtoType}} {{$column.GoField | CaseCamelLower}} = {{$ordinal}};
+  {{end}}
+  {{range $ti, $relatedTable := .table.RelatedTables}}
+    {{$ordinal = ($ordinal | plus 1)}}
+    {{$relatedTable.ClassNameWhenRelated}} {{$relatedTable.ClassNameWhenRelated | CaseCamelLower}} = {{$ordinal}};
+  {{end}}
+}
+
+{{range $ti, $relatedTable := .table.RelatedTables}}
+message {{$relatedTable.ClassNameWhenRelated}} {
+    {{$ordinal := 0}}
+	{{range $ci, $relatedColumn := $relatedTable.RefColumns.Values}}
+    {{$ordinal = ($ordinal | plus 1)}}
+    {{$relatedColumn.ProtoType}} {{$relatedColumn.GoField | CaseCamelLower}} = {{$ordinal}};
+	{{end}}
+    {{range $ti, $innerRelatedTable := $relatedTable.RelatedTables}}
+    {{$ordinal = ($ordinal | plus 1)}}
+    {{$innerRelatedTable.ClassNameWhenRelated}}  {{$innerRelatedTable.ClassNameWhenRelated | CaseCamelLower}} = {{$ordinal}};
+    {{end}}
+}
+{{end}}
+
+{{range $ri, $relatedTable := .table.RelatedTables}}
+{{range $ii, $innerRelatedTable := $relatedTable.RelatedTables}}
+message {{$innerRelatedTable.ClassNameWhenRelated}} {
+    {{$ordinal := 0}}
+    {{range $ci, $relatedColumn := $innerRelatedTable.RefColumns.Values}}
+    {{$ordinal = ($ordinal | plus 1)}}
+    {{$relatedColumn.ProtoType}} {{$relatedColumn.GoField | CaseCamelLower}} = {{$ordinal}};
+    {{end}}
+}
+{{end}}
+{{end}}
+
+// {{.table.ClassName}}InfoReq 数据查询参数
+message {{.table.ClassName}}InfoReq {
+    {{.table.PkColumn.ProtoType}} id = 1;
+}
+
+// {{.table.ClassName}}InfoRes 数据返回结果
+message {{.table.ClassName}}InfoRes {
+    {{$ordinal := 0}}
+    {{range $index, $column := .table.Columns}}
+    {{$ordinal = ($ordinal | plus 1)}}
+    {{$column.ProtoType}} {{$column.GoField | CaseCamelLower}} = {{$ordinal}};
+    {{end}}
+    {{range $ti, $relatedTable := .table.RelatedTables}}
+    {{$ordinal = ($ordinal | plus 1)}}
+    {{$relatedTable.ClassNameWhenRelated}} {{$relatedTable.ClassNameWhenRelated | CaseCamelLower}} = {{$ordinal}};
+    {{end}}
+}
+
+// {{.table.ClassName}}AddReq 添加操作请求参数
+message {{.table.ClassName}}AddReq {
+    {{$ordinal := 0}}
+    {{range $index, $column := .table.AddColumns}}
+    {{$ordinal = ($ordinal | plus 1)}}
+    {{$column.Base.ProtoType}} {{$column.GoField | CaseCamelLower}} = {{$ordinal}};
+    {{end}}
+    {{if .table.HasCreatedBy}}
+    {{$ordinal = ($ordinal | plus 1)}}
+    uint64 createdBy = {{$ordinal}};
+    {{end}}
+}
+
+// {{.table.ClassName}}AddRes 添加操作返回结果
+message {{.table.ClassName}}AddRes {
+    int64 lastInsertId = 1;
+    int64 rowsAffected = 2;
+}
+
+// {{.table.ClassName}}EditReq 修改操作请求参数
+message {{.table.ClassName}}EditReq {
+    {{$ordinal := 0}}
+    {{if not .table.IsPkInEdit}}
+    {{$ordinal = ($ordinal | plus 1)}}
+    {{.table.PkColumn.ProtoType}} {{.table.PkColumn.GoField | CaseCamelLower}} = 1;
+    {{end}}
+    {{range $index, $column := .table.EditColumns}}
+    {{$ordinal = ($ordinal | plus 1)}}
+    {{$column.Base.ProtoType}} {{$column.GoField | CaseCamelLower}} = {{$ordinal}};
+    {{end}}
+    {{if .table.HasUpdatedBy}}
+    {{$ordinal = ($ordinal | plus 1)}}
+    uint64 updatedBy = {{$ordinal}};
+    {{end}}
+}
+
+// {{.table.ClassName}}EditRes 修改操作返回结果
+message {{.table.ClassName}}EditRes {
+    int64 rowsAffected = 1;
+}
+
+// {{.table.ClassName}}DeleteReq 删除操作返回结果
+message {{.table.ClassName}}DeleteReq {
+    repeated {{.table.PkColumn.ProtoType}} Ids = 1;
+}
+
+// {{.table.ClassName}}DeleteRes 删除操作返回结果
+message {{.table.ClassName}}DeleteRes {
+    int64 rowsAffected = 1;
+}
+
+{{range $index,$column:= .table.ListColumns}}
+{{if and $column.IsInlineEditable}}
+// {{$.table.ClassName}}Change{{$column.GoField}}Req 设置状态请求参数
+message {{$.table.ClassName}}Change{{$column.GoField}}Req {
+    {{$.table.PkColumn.ProtoType}} {{$.table.PkColumn.GoField | CaseCamelLower}} = 1;
+    {{$column.Base.ProtoType}} {{$column.GoField | CaseCamelLower}} = 2;
+}
+
+// {{$.table.ClassName}}Change{{$column.GoField}}Res 设置状态返回结果
+message {{$.table.ClassName}}Change{{$column.GoField}}Res {
+    int64 rowsAffected = 1;
+}
+
+{{end}}
+{{end}}
+
+{{if eq .table.TemplateCategory "tree"}}
+// {{.table.ClassName}}GetChildrenIdsRes 获取子记录ID列表返回结果
+message {{.table.ClassName}}GetChildrenIdsRes {
+    repeated {{.table.PkColumn.ProtoType}} Ids = 1;
+}
+{{end}}
