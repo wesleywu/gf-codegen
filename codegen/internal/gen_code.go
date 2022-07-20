@@ -1,4 +1,4 @@
-package main
+package internal
 
 import (
 	"bufio"
@@ -6,7 +6,8 @@ import (
 	"database/sql"
 	_ "embed"
 	"fmt"
-	"github.com/WesleyWu/gf-codegen/internal/protobuf"
+	"github.com/WesleyWu/gf-codegen/common"
+	"github.com/WesleyWu/gf-codegen/common/protobuf"
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
@@ -61,9 +62,9 @@ var listVueTemplate string
 //go:embed template/vue/tree-vue.template
 var treeVueTemplate string
 
-func GenCodeByTableDefYaml(ctx context.Context, tableName string, genOptions *GenOptions) error {
-	var cache = map[string]*tableDef{}
-	table, err := LoadTableDefYaml(ctx, tableName, genOptions.YamlInputPath, genOptions.GoModuleName, cache)
+func GenCodeByTableDefYaml(ctx context.Context, tableName string, genOptions *common.GenOptions) error {
+	var cache = map[string]*common.TableDef{}
+	table, err := common.LoadTableDefYaml(ctx, tableName, genOptions.YamlInputPath, genOptions.GoModuleName, cache)
 	if err != nil {
 		return err
 	}
@@ -87,12 +88,12 @@ func GenCodeByTableDefYaml(ctx context.Context, tableName string, genOptions *Ge
 			return gerror.New("必须指定rpc服务侦听端口 RpcPort，建议20000以上，各服务的端口号不能重复")
 		}
 	}
-	err = table.processCascades()
+	err = table.ProcessCascades()
 	if err != nil {
 		g.Log().Error(ctx, err)
 		return err
 	}
-	err = table.processRelatedAndForeign(ctx, genOptions.YamlInputPath, genOptions.GoModuleName, cache)
+	err = table.ProcessRelatedAndForeign(ctx, genOptions.YamlInputPath, genOptions.GoModuleName, cache)
 	if err != nil {
 		g.Log().Error(ctx, err)
 		return err
@@ -107,17 +108,17 @@ func GenCodeByTableDefYaml(ctx context.Context, tableName string, genOptions *Ge
 }
 
 // 获取生成所需数据
-func prepareTemplateData(table *tableDef, ctx context.Context) (data g.MapStrStr, err error) {
+func prepareTemplateData(table *common.TableDef, ctx context.Context) (data g.MapStrStr, err error) {
 	//树形菜单选项
 	tplData := g.Map{"table": table}
-	view := TemplateEngine()
+	view := common.TemplateEngine()
 
 	entityKey := "entity"
 	entityValue := ""
 	var tmpEntity string
 	if tmpEntity, err = view.ParseContent(ctx, entityTemplate, tplData); err == nil {
 		entityValue = tmpEntity
-		entityValue, err = TrimBreak(entityValue)
+		entityValue, err = common.TrimBreak(entityValue)
 	} else {
 		return
 	}
@@ -127,7 +128,7 @@ func prepareTemplateData(table *tableDef, ctx context.Context) (data g.MapStrStr
 	var tmpModel string
 	if tmpModel, err = view.ParseContent(ctx, modelTemplate, tplData); err == nil {
 		modelValue = tmpModel
-		modelValue, err = TrimBreak(modelValue)
+		modelValue, err = common.TrimBreak(modelValue)
 	} else {
 		return
 	}
@@ -137,7 +138,7 @@ func prepareTemplateData(table *tableDef, ctx context.Context) (data g.MapStrStr
 	var tmpDao string
 	if tmpDao, err = view.ParseContent(ctx, daoTemplate, tplData); err == nil {
 		daoValue = tmpDao
-		daoValue, err = TrimBreak(daoValue)
+		daoValue, err = common.TrimBreak(daoValue)
 	} else {
 		return
 	}
@@ -147,7 +148,7 @@ func prepareTemplateData(table *tableDef, ctx context.Context) (data g.MapStrStr
 	var tmpInternalDao string
 	if tmpInternalDao, err = view.ParseContent(ctx, daoInternalTemplate, tplData); err == nil {
 		daoInternalValue = tmpInternalDao
-		daoInternalValue, err = TrimBreak(daoInternalValue)
+		daoInternalValue, err = common.TrimBreak(daoInternalValue)
 	} else {
 		return
 	}
@@ -157,7 +158,7 @@ func prepareTemplateData(table *tableDef, ctx context.Context) (data g.MapStrStr
 	var tmpDo string
 	if tmpDo, err = view.ParseContent(ctx, doTemplate, tplData); err == nil {
 		doValue = tmpDo
-		doValue, err = TrimBreak(doValue)
+		doValue, err = common.TrimBreak(doValue)
 	} else {
 		return
 	}
@@ -167,7 +168,7 @@ func prepareTemplateData(table *tableDef, ctx context.Context) (data g.MapStrStr
 	var tmpController string
 	if tmpController, err = view.ParseContent(ctx, controllerTemplate, tplData); err == nil {
 		controllerValue = tmpController
-		controllerValue, err = TrimBreak(controllerValue)
+		controllerValue, err = common.TrimBreak(controllerValue)
 	} else {
 		return
 	}
@@ -177,7 +178,7 @@ func prepareTemplateData(table *tableDef, ctx context.Context) (data g.MapStrStr
 	var tmpService string
 	if tmpService, err = view.ParseContent(ctx, serviceTemplate, tplData); err == nil {
 		serviceValue = tmpService
-		serviceValue, err = TrimBreak(serviceValue)
+		serviceValue, err = common.TrimBreak(serviceValue)
 	} else {
 		return
 	}
@@ -187,7 +188,7 @@ func prepareTemplateData(table *tableDef, ctx context.Context) (data g.MapStrStr
 	var tmpRouter string
 	if tmpRouter, err = view.ParseContent(ctx, routerTemplate, tplData); err == nil {
 		routerValue = tmpRouter
-		routerValue, err = TrimBreak(routerValue)
+		routerValue, err = common.TrimBreak(routerValue)
 	} else {
 		return
 	}
@@ -197,7 +198,7 @@ func prepareTemplateData(table *tableDef, ctx context.Context) (data g.MapStrStr
 	var tmpProtobuf string
 	if tmpProtobuf, err = view.ParseContent(ctx, protobufTemplate, tplData); err == nil {
 		protobufValue = tmpProtobuf
-		protobufValue, err = TrimBreak(protobufValue)
+		protobufValue, err = common.TrimBreak(protobufValue)
 	} else {
 		return
 	}
@@ -207,7 +208,7 @@ func prepareTemplateData(table *tableDef, ctx context.Context) (data g.MapStrStr
 	var tmpProvider string
 	if tmpProvider, err = view.ParseContent(ctx, providerTemplate, tplData); err == nil {
 		providerValue = tmpProvider
-		providerValue, err = TrimBreak(providerValue)
+		providerValue, err = common.TrimBreak(providerValue)
 	} else {
 		return
 	}
@@ -217,7 +218,7 @@ func prepareTemplateData(table *tableDef, ctx context.Context) (data g.MapStrStr
 	var tmpSql string
 	if tmpSql, err = view.ParseContent(ctx, sqlTemplate, tplData); err == nil {
 		sqlValue = tmpSql
-		sqlValue, err = TrimBreak(sqlValue)
+		sqlValue, err = common.TrimBreak(sqlValue)
 	} else {
 		return
 	}
@@ -227,7 +228,7 @@ func prepareTemplateData(table *tableDef, ctx context.Context) (data g.MapStrStr
 	var tmpJsApi string
 	if tmpJsApi, err = view.ParseContent(ctx, jsapiTemplate, tplData); err == nil {
 		jsApiValue = tmpJsApi
-		jsApiValue, err = TrimBreak(jsApiValue)
+		jsApiValue, err = common.TrimBreak(jsApiValue)
 	} else {
 		return
 	}
@@ -242,7 +243,7 @@ func prepareTemplateData(table *tableDef, ctx context.Context) (data g.MapStrStr
 	}
 	if tmpVue, err = view.ParseContent(ctx, templateContent, tplData); err == nil {
 		vueValue = tmpVue
-		vueValue, err = TrimBreak(vueValue)
+		vueValue, err = common.TrimBreak(vueValue)
 	} else {
 		return
 	}
@@ -266,7 +267,7 @@ func prepareTemplateData(table *tableDef, ctx context.Context) (data g.MapStrStr
 }
 
 // 生成代码文件
-func doGenCode(ctx context.Context, table *tableDef, genOptions *GenOptions) error {
+func doGenCode(ctx context.Context, table *common.TableDef, genOptions *common.GenOptions) error {
 	var (
 		curDir     string
 		path       string
@@ -302,35 +303,35 @@ func doGenCode(ctx context.Context, table *tableDef, genOptions *GenOptions) err
 			} else {
 				path = strings.Join([]string{curDir, "/", packageName, "/api/", goFileName, ".go"}, "")
 			}
-			err = WriteFile(path, code, table.Overwrite)
+			err = common.WriteFile(path, code, table.Overwrite)
 		case "dao":
 			if table.SeparatePackage {
 				path = strings.Join([]string{curDir, "/", packageName, "/", goFileName, "/service/internal/dao/", goFileName, ".go"}, "")
 			} else {
 				path = strings.Join([]string{curDir, "/", packageName, "/service/internal/dao/", goFileName, ".go"}, "")
 			}
-			err = WriteFile(path, code, table.Overwrite)
+			err = common.WriteFile(path, code, table.Overwrite)
 		case "dao_internal":
 			if table.SeparatePackage {
 				path = strings.Join([]string{curDir, "/", packageName, "/", goFileName, "/service/internal/dao/internal/", goFileName, ".go"}, "")
 			} else {
 				path = strings.Join([]string{curDir, "/", packageName, "/service/internal/dao/internal/", goFileName, ".go"}, "")
 			}
-			err = WriteFile(path, code, table.Overwrite)
+			err = common.WriteFile(path, code, table.Overwrite)
 		case "do":
 			if table.SeparatePackage {
 				path = strings.Join([]string{curDir, "/", packageName, "/", goFileName, "/service/internal/do/", goFileName, ".go"}, "")
 			} else {
 				path = strings.Join([]string{curDir, "/", packageName, "/service/internal/do/", goFileName, ".go"}, "")
 			}
-			err = WriteFile(path, code, table.Overwrite)
+			err = common.WriteFile(path, code, table.Overwrite)
 		case "entity":
 			if table.SeparatePackage {
 				path = strings.Join([]string{curDir, "/", packageName, "/", goFileName, "/model/entity/", goFileName, ".go"}, "")
 			} else {
 				path = strings.Join([]string{curDir, "/", packageName, "/model/entity/", goFileName, ".go"}, "")
 			}
-			err = WriteFile(path, code, table.Overwrite)
+			err = common.WriteFile(path, code, table.Overwrite)
 		case "model":
 			if table.SeparatePackage {
 				path = strings.Join([]string{curDir, "/", packageName, "/", goFileName, "/model/", goFileName, ".go"}, "")
@@ -338,7 +339,7 @@ func doGenCode(ctx context.Context, table *tableDef, genOptions *GenOptions) err
 				path = strings.Join([]string{curDir, "/", packageName, "/model/", goFileName, ".go"}, "")
 			}
 			if !table.IsRpc {
-				err = WriteFile(path, code, table.Overwrite)
+				err = common.WriteFile(path, code, table.Overwrite)
 			} else if table.Overwrite {
 				if gfile.Exists(path) {
 					_ = gfile.Remove(path)
@@ -353,7 +354,7 @@ func doGenCode(ctx context.Context, table *tableDef, genOptions *GenOptions) err
 			} else {
 				path = strings.Join([]string{curDir, "/", packageName, "/router/", goFileName, ".go"}, "")
 			}
-			err = WriteFile(path, code, table.Overwrite)
+			err = common.WriteFile(path, code, table.Overwrite)
 		case "protobuf":
 			if table.SeparatePackage {
 				path = strings.Join([]string{curDir, "/", packageName, "/", goFileName, "/proto"}, "")
@@ -361,7 +362,7 @@ func doGenCode(ctx context.Context, table *tableDef, genOptions *GenOptions) err
 				path = strings.Join([]string{curDir, "/", packageName, "/proto"}, "")
 			}
 			if table.IsRpc {
-				err = WriteFile(path+"/"+goFileName+".proto", code, table.Overwrite)
+				err = common.WriteFile(path+"/"+goFileName+".proto", code, table.Overwrite)
 				if err != nil {
 					return err
 				}
@@ -394,7 +395,7 @@ func doGenCode(ctx context.Context, table *tableDef, genOptions *GenOptions) err
 				path = strings.Join([]string{curDir, "/", packageName, "/provider"}, "")
 			}
 			if table.IsRpc {
-				err = WriteFile(path+"/"+goFileName+".go", code, table.Overwrite)
+				err = common.WriteFile(path+"/"+goFileName+".go", code, table.Overwrite)
 			} else if table.Overwrite {
 				if gfile.Exists(path) {
 					_ = gfile.Remove(path)
@@ -406,14 +407,14 @@ func doGenCode(ctx context.Context, table *tableDef, genOptions *GenOptions) err
 			} else {
 				path = strings.Join([]string{curDir, "/", packageName, "/service/", goFileName, ".go"}, "")
 			}
-			err = WriteFile(path, code, table.Overwrite)
+			err = common.WriteFile(path, code, table.Overwrite)
 		case "sql":
 			if g.IsEmpty(frontDir) {
 				break
 			}
 			path = strings.Join([]string{curDir, "/data/gen_sql/", packageName, "/", goFileName, ".sql"}, "")
 			hasSql := gfile.Exists(path)
-			err = WriteFile(path, code, table.Overwrite)
+			err = common.WriteFile(path, code, table.Overwrite)
 			if !hasSql || table.Overwrite {
 				//第一次生成则向数据库写入菜单数据
 				err = saveMenuDb(path, ctx)
@@ -429,7 +430,7 @@ func doGenCode(ctx context.Context, table *tableDef, genOptions *GenOptions) err
 			if gstr.ContainsI(table.BackendPackage, "plugins") {
 				path = strings.Join([]string{frontDir, "/src/views/plugins/", table.FrontendPath, "/", table.FrontendFileName, "/list/index.vue"}, "")
 			}
-			err = WriteFile(path, code, table.Overwrite)
+			err = common.WriteFile(path, code, table.Overwrite)
 		case "jsApi":
 			if g.IsEmpty(frontDir) {
 				break
@@ -438,7 +439,7 @@ func doGenCode(ctx context.Context, table *tableDef, genOptions *GenOptions) err
 			if gstr.ContainsI(table.BackendPackage, "plugins") {
 				path = strings.Join([]string{frontDir, "/src/api/plugins/", table.FrontendPath, "/", table.FrontendFileName, ".js"}, "")
 			}
-			err = WriteFile(path, code, table.Overwrite)
+			err = common.WriteFile(path, code, table.Overwrite)
 		}
 	}
 	//生成对应的模块路由
@@ -460,14 +461,14 @@ func genModuleRouter(curDir, goFileName, backendPackage, goModuleName string, ov
 			routerFilePath = strings.Join([]string{curDir, "/plugins/router/", gstr.Replace(packageName, "/", "_"), "_", goFileName, ".go"}, "")
 		}
 		code := fmt.Sprintf(`package router%simport _ "%s/%s/router"`, "\n", backendPackage, goFileName)
-		err = WriteFile(routerFilePath, code, overwrite)
+		err = common.WriteFile(routerFilePath, code, overwrite)
 	} else {
 		routerFilePath := strings.Join([]string{curDir, "/router/", gstr.Replace(packageName, "/", "_"), ".go"}, "")
 		if gstr.ContainsI(packageName, "plugins") {
 			routerFilePath = strings.Join([]string{curDir, "/plugins/router/", gstr.Replace(packageName, "/", "_"), ".go"}, "")
 		}
 		code := fmt.Sprintf(`package router%simport _ "%s/router"`, "\n", backendPackage)
-		err = WriteFile(routerFilePath, code, overwrite)
+		err = common.WriteFile(routerFilePath, code, overwrite)
 	}
 	return
 }

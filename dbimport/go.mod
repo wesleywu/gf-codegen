@@ -3,7 +3,7 @@ module github.com/WesleyWu/gf-codegen/dbimport
 go 1.17
 
 require (
-	github.com/WesleyWu/gf-codegen v0.0.2
+	github.com/WesleyWu/gf-codegen v0.0.3
 	github.com/gogf/gf/v2 v2.1.2
 )
 

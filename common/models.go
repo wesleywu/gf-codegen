@@ -290,7 +290,7 @@ func (s *TableDef) ProcessColumns(ctx context.Context, yamlInputPath string, goM
 				return gerror.Newf("详情字段 %s 不存在于表 %s 的 columns 和 virtualColumns 定义中", s.Name, columnName)
 			}
 		}
-		s.setDetailColumnValues(detailColumn, baseColumn)
+		s.SetDetailColumnValues(detailColumn, baseColumn)
 	}
 	for _, queryColumn := range s.QueryColumns {
 		columnName := queryColumn.Name
@@ -513,7 +513,7 @@ func (s *TableDef) SetQueryColumnValues(queryColumn *QueryColumnDef, baseColumn 
 	return
 }
 
-func (s *TableDef) setDetailColumnValues(detailColumn *DetailColumnDef, baseColumn *ColumnDef) {
+func (s *TableDef) SetDetailColumnValues(detailColumn *DetailColumnDef, baseColumn *ColumnDef) {
 	detailColumn.Base = baseColumn
 	detailColumn.Comment = baseColumn.Comment
 	detailColumn.GoType = baseColumn.GoType
@@ -524,7 +524,7 @@ func (s *TableDef) setDetailColumnValues(detailColumn *DetailColumnDef, baseColu
 	}
 }
 
-func (s *TableDef) processCascadeColumn(column *ColumnDef) (err error) {
+func (s *TableDef) ProcessCascadeColumn(column *ColumnDef) (err error) {
 	if !column.IsCascade {
 		return
 	}
@@ -548,7 +548,7 @@ func (s *TableDef) processCascadeColumn(column *ColumnDef) (err error) {
 	return
 }
 
-func (s *TableDef) addChildren(column *ColumnDef) (err error) {
+func (s *TableDef) AddChildren(column *ColumnDef) (err error) {
 	if !column.IsCascade {
 		return
 	}
@@ -572,27 +572,27 @@ func (s *TableDef) addChildren(column *ColumnDef) (err error) {
 	return
 }
 
-func (s *TableDef) processCascades() error {
+func (s *TableDef) ProcessCascades() error {
 	for _, column := range s.Columns {
-		err := s.processCascadeColumn(column)
+		err := s.ProcessCascadeColumn(column)
 		if err != nil {
 			return err
 		}
 	}
 	for _, column := range s.VirtualColumns {
-		err := s.processCascadeColumn(column)
+		err := s.ProcessCascadeColumn(column)
 		if err != nil {
 			return err
 		}
 	}
 	for _, column := range s.Columns {
-		err := s.addChildren(column)
+		err := s.AddChildren(column)
 		if err != nil {
 			return err
 		}
 	}
 	for _, column := range s.VirtualColumns {
-		err := s.addChildren(column)
+		err := s.AddChildren(column)
 		if err != nil {
 			return err
 		}
@@ -600,15 +600,15 @@ func (s *TableDef) processCascades() error {
 	return nil
 }
 
-func (s *TableDef) processRelatedAndForeign(ctx context.Context, yamlInputPath string, goModuleName string, cache map[string]*TableDef) error {
+func (s *TableDef) ProcessRelatedAndForeign(ctx context.Context, yamlInputPath string, goModuleName string, cache map[string]*TableDef) error {
 	for _, column := range s.Columns {
-		err := s.processColumnRelatedAndForeign(ctx, column, yamlInputPath, goModuleName, cache)
+		err := s.ProcessColumnRelatedAndForeign(ctx, column, yamlInputPath, goModuleName, cache)
 		if err != nil {
 			return err
 		}
 	}
 	for _, column := range s.VirtualColumns {
-		err := s.processColumnRelatedAndForeign(ctx, column, yamlInputPath, goModuleName, cache)
+		err := s.ProcessColumnRelatedAndForeign(ctx, column, yamlInputPath, goModuleName, cache)
 		if err != nil {
 			return err
 		}
@@ -645,12 +645,12 @@ func (s *TableDef) processRelatedAndForeign(ctx context.Context, yamlInputPath s
 	return nil
 }
 
-func (s *TableDef) processColumnRelatedAndForeign(ctx context.Context, column *ColumnDef, yamlInputPath string, goModuleName string, cache map[string]*TableDef) error {
+func (s *TableDef) ProcessColumnRelatedAndForeign(ctx context.Context, column *ColumnDef, yamlInputPath string, goModuleName string, cache map[string]*TableDef) error {
 	if g.IsEmpty(column.RelatedTableName) && g.IsEmpty(column.ForeignTableName) {
 		return nil
 	}
 	if !g.IsEmpty(column.ForeignTableName) { // 存在外表（虚拟字段所在的表）
-		foreignTable, err := s.addRelatedInfo(ctx, column.ForeignTableName, column.ForeignValueColumnName, column.ForeignKeyColumnName, yamlInputPath, goModuleName, cache)
+		foreignTable, err := s.AddRelatedInfo(ctx, column.ForeignTableName, column.ForeignValueColumnName, column.ForeignKeyColumnName, yamlInputPath, goModuleName, cache)
 		if err != nil {
 			return err
 		}
@@ -661,7 +661,7 @@ func (s *TableDef) processColumnRelatedAndForeign(ctx context.Context, column *C
 		column.ForeignTableClass = foreignTable.ClassName
 
 		if !g.IsEmpty(column.RelatedTableName) { // 主表->外表->外表的关联表 三级嵌套
-			innerRelatedTable, err1 := foreignTable.addRelatedInfo(ctx, column.RelatedTableName, column.RelatedValueColumnName, column.ForeignValueColumnName, yamlInputPath, goModuleName, cache)
+			innerRelatedTable, err1 := foreignTable.AddRelatedInfo(ctx, column.RelatedTableName, column.RelatedValueColumnName, column.ForeignValueColumnName, yamlInputPath, goModuleName, cache)
 			if err1 != nil {
 				return err
 			}
@@ -696,7 +696,7 @@ func (s *TableDef) processColumnRelatedAndForeign(ctx context.Context, column *C
 		s.FkColumnNameSet.Add(column.ForeignKeyColumnName)
 
 	} else if !g.IsEmpty(column.RelatedTableName) { // 不存在外表，只有主表->主表的关联表 两级嵌套
-		relatedTable, err := s.addRelatedInfo(ctx, column.RelatedTableName, column.RelatedValueColumnName, column.Name, yamlInputPath, goModuleName, cache)
+		relatedTable, err := s.AddRelatedInfo(ctx, column.RelatedTableName, column.RelatedValueColumnName, column.Name, yamlInputPath, goModuleName, cache)
 		if err != nil {
 			return err
 		}
@@ -716,7 +716,7 @@ func (s *TableDef) processColumnRelatedAndForeign(ctx context.Context, column *C
 	return nil
 }
 
-func (s *TableDef) addRelatedInfo(ctx context.Context, relatedTableName, relatedValueColumnName, originalColumnName string, yamlInputPath string, goModuleName string, cache map[string]*TableDef) (*TableDef, error) {
+func (s *TableDef) AddRelatedInfo(ctx context.Context, relatedTableName, relatedValueColumnName, originalColumnName string, yamlInputPath string, goModuleName string, cache map[string]*TableDef) (*TableDef, error) {
 	if s.RelatedTableMap == nil {
 		s.RelatedTableMap = &gmap.ListMap{}
 	}
@@ -727,14 +727,14 @@ func (s *TableDef) addRelatedInfo(ctx context.Context, relatedTableName, related
 		}
 		return t
 	}).(*TableDef)
-	err := relatedTable.addWithInfo(relatedValueColumnName, originalColumnName)
+	err := relatedTable.AddWithInfo(relatedValueColumnName, originalColumnName)
 	if err != nil {
 		return nil, err
 	}
 	return relatedTable, nil
 }
 
-func (s *TableDef) addWithInfo(destValueColumn, originalColumn string) error {
+func (s *TableDef) AddWithInfo(destValueColumn, originalColumn string) error {
 	relatedValueColumn, foundValue := s.ColumnMap[destValueColumn]
 	if !foundValue {
 		return gerror.Newf("无法找到关联表的列 %s", destValueColumn)

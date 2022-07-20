@@ -2,7 +2,8 @@ package main
 
 import (
 	"context"
-	"github.com/WesleyWu/gf-codegen/internal"
+	"github.com/WesleyWu/gf-codegen/codegen/internal"
+	"github.com/WesleyWu/gf-codegen/common"
 	"github.com/gogf/gf/v2/container/gset"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
@@ -23,14 +24,14 @@ func CodeGenFunc(ctx context.Context, parser *gcmd.Parser) error {
 	frontendType := parser.GetOpt("frontendType").String()
 	frontendPath := parser.GetOpt("frontendPath").String()
 
-	tableNamesFilter := gset.NewStrSetFrom(internal.SplitComma(tablesStr))
-	tablePrefixesOnly := internal.SplitComma(tablePrefixOnlyStr)
-	goModuleName, err := internal.GetGoModuleName()
+	tableNamesFilter := gset.NewStrSetFrom(common.SplitComma(tablesStr))
+	tablePrefixesOnly := common.SplitComma(tablePrefixOnlyStr)
+	goModuleName, err := common.GetGoModuleName()
 	if err != nil {
 		return err
 	}
 
-	genOption := &internal.GenOptions{
+	genOption := &common.GenOptions{
 		YamlInputPath: yamlInputPath,
 		GoModuleName:  goModuleName,
 		ServiceOnly:   serviceOnly,

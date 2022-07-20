@@ -3,8 +3,7 @@ package internal
 import (
 	"context"
 	_ "embed"
-	"github.com/WesleyWu/gf-codegen/model"
-	"github.com/WesleyWu/gf-codegen/util"
+	"github.com/WesleyWu/gf-codegen/common"
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
@@ -29,43 +28,28 @@ func ParseDblink(dblink string) error {
 	return gerror.Newf("不正确的dblink格式：%s", dblink)
 }
 
-func SaveTableDef(ctx context.Context, table *model.TableDef, yamlOutputPath string) error {
+func SaveTableDef(ctx context.Context, table *common.TableDef, yamlOutputPath string) error {
 	curDir, err := os.Getwd()
 	if err != nil {
 		return gerror.New("获取本地路径失败")
 	}
 	yamlFile := path.Join(curDir, yamlOutputPath, table.Name+".yaml")
 
-	view := util.TemplateEngine()
+	view := common.TemplateEngine()
 	tplData := g.Map{"apiVersion": "v1", "table": table}
 	var tplOut string
 	if tplOut, err = view.ParseContent(ctx, yamlTemplate, tplData); err != nil {
 		return err
 	}
-	tplOut, err = util.TrimBreak(tplOut)
+	tplOut, err = common.TrimBreak(tplOut)
 	if err != nil {
 		return err
 	}
-	err = util.WriteFile(yamlFile, tplOut, true)
+	err = common.WriteFile(yamlFile, tplOut, true)
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-func SplitComma(str string) []string {
-	var result []string
-	if g.IsEmpty(gstr.Trim(str)) {
-		return result
-	}
-	temp := gstr.Split(str, ",")
-	for _, one := range temp {
-		oneTrimmed := gstr.Trim(one)
-		if !g.IsEmpty(oneTrimmed) {
-			result = append(result, oneTrimmed)
-		}
-	}
-	return result
 }
 
 // GetDbDriver 获取数据库驱动类型

@@ -2,9 +2,8 @@ package main
 
 import (
 	"context"
+	"github.com/WesleyWu/gf-codegen/common"
 	"github.com/WesleyWu/gf-codegen/dbimport/internal"
-	"github.com/WesleyWu/gf-codegen/model"
-	"github.com/WesleyWu/gf-codegen/util"
 	"github.com/gogf/gf/v2/os/gcmd"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/text/gstr"
@@ -29,10 +28,10 @@ func ImportFunc(ctx context.Context, parser *gcmd.Parser) error {
 		return err
 	}
 
-	tables := internal.SplitComma(tablesStr)
-	removeTablePrefixes := internal.SplitComma(removeTablePrefixStr)
-	tablePrefixesOnly := internal.SplitComma(tablePrefixOnlyStr)
-	goModuleName, err := util.GetGoModuleName()
+	tables := common.SplitComma(tablesStr)
+	removeTablePrefixes := common.SplitComma(removeTablePrefixStr)
+	tablePrefixesOnly := common.SplitComma(tablePrefixOnlyStr)
+	goModuleName, err := common.GetGoModuleName()
 	if err != nil {
 		return err
 	}
@@ -44,7 +43,7 @@ func ImportFunc(ctx context.Context, parser *gcmd.Parser) error {
 		backendPackage = goModuleName + "/" + backendPackage
 	}
 
-	importOptions := &model.ImportOptions{
+	importOptions := &common.ImportOptions{
 		BackendPackage:      backendPackage,
 		FrontendModule:      frontendModule,
 		GoModuleName:        goModuleName,

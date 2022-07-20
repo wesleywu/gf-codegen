@@ -255,6 +255,21 @@ func GetDataType(sqlType string) (dataType string, isUnsigned bool) {
 	return
 }
 
+func SplitComma(str string) []string {
+	var result []string
+	if g.IsEmpty(gstr.Trim(str)) {
+		return result
+	}
+	temp := gstr.Split(str, ",")
+	for _, one := range temp {
+		oneTrimmed := gstr.Trim(one)
+		if !g.IsEmpty(oneTrimmed) {
+			result = append(result, oneTrimmed)
+		}
+	}
+	return result
+}
+
 func columnsSlice(columnMap map[string]*ColumnDef, isVirtual bool) []*ColumnDef {
 	columns := make([]*ColumnDef, len(columnMap))
 	i := 0
