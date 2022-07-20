@@ -18,6 +18,7 @@ import (
     "{{.table.BackendPackage}}{{if .table.SeparatePackage}}/{{.table.GoFileName}}{{end}}/model"
     "{{.table.BackendPackage}}{{if .table.SeparatePackage}}/{{.table.GoFileName}}{{end}}/model/entity"
     "{{.table.BackendPackage}}{{if .table.SeparatePackage}}/{{.table.GoFileName}}{{end}}/service/internal/dao"
+    "{{.table.BackendPackage}}{{if .table.SeparatePackage}}/{{.table.GoFileName}}{{end}}/service/internal/do"
     {{if eq .table.TemplateCategory "tree"}}
     "devops.gitlab.zfkunyu.com/cartsee-go/cartx-etl/library"
     {{end}}
@@ -40,6 +41,8 @@ import (
 type I{{.table.ClassName}} interface {
     GetList(ctx context.Context, req *model.{{.table.ClassName}}ListReq) (*model.{{.table.ClassName}}ListRes, error)
     GetInfoById(ctx context.Context, req *model.{{.table.ClassName}}InfoReq) (*model.{{.table.ClassName}}InfoRes, error)
+    DoCreate(ctx context.Context, req *do.{{.table.ClassName}}) (*model.{{.table.ClassName}}CreateRes, error)
+    DoUpdate(ctx context.Context, req *do.{{.table.ClassName}}) (*model.{{.table.ClassName}}UpdateRes, error)
     Create(ctx context.Context, req *model.{{.table.ClassName}}CreateReq) (*model.{{.table.ClassName}}CreateRes, error)
     Update(ctx context.Context, req *model.{{.table.ClassName}}UpdateReq) (*model.{{.table.ClassName}}UpdateRes, error)
     DeleteByIds(ctx context.Context, req *model.{{.table.ClassName}}DeleteReq) (*model.{{.table.ClassName}}DeleteRes, error)
@@ -243,7 +246,7 @@ func (s *{{.table.ClassName}}Impl) GetInfoById(ctx context.Context, req *model.{
     return info, nil
 }
 
-// Create 添加
+// Create 添加（addColumns 中的全量字段，未赋值字段将被更新为 NULL 或数据库表指定的DEFAULT）
 func (s *{{.table.ClassName}}Impl) Create(ctx context.Context, req *model.{{.table.ClassName}}CreateReq) (*model.{{.table.ClassName}}CreateRes, error) {
 	var (
 		result       sql.Result
@@ -275,8 +278,70 @@ func (s *{{.table.ClassName}}Impl) Create(ctx context.Context, req *model.{{.tab
     }, nil
 }
 
-// Update 修改
+// DoCreate 添加（可选字段）
+func (s *{{.table.ClassName}}Impl) DoCreate(ctx context.Context, req *do.{{.table.ClassName}}) (*model.{{.table.ClassName}}CreateRes, error) {
+	var (
+		result       sql.Result
+		lastInsertId int64
+		rowsAffected int64
+		err          error
+	)
+    result, err = dao.{{.table.ClassName}}.Ctx(ctx).Insert(req)
+    if err != nil {
+		err = gerror.Wrap(err, "插入失败")
+		g.Log().Error(ctx, err)
+        return nil, err
+    }
+    lastInsertId, err = result.LastInsertId()
+    if err != nil {
+		err = gerror.Wrap(err, "插入失败")
+		g.Log().Error(ctx, err)
+        return nil, err
+    }
+    rowsAffected, err = result.RowsAffected()
+    if err != nil {
+		err = gerror.Wrap(err, "插入失败")
+		g.Log().Error(ctx, err)
+        return nil, err
+    }
+    return &model.{{.table.ClassName}}CreateRes{
+        LastInsertId: lastInsertId,
+        RowsAffected: rowsAffected,
+    }, nil
+}
+
+// Update 修改（editColumns 中的全量字段，未赋值字段将被更新为 NULL 或数据库表指定的DEFAULT）
 func (s *{{.table.ClassName}}Impl) Update(ctx context.Context, req *model.{{.table.ClassName}}UpdateReq) (*model.{{.table.ClassName}}UpdateRes, error) {
+    {{ $fieldsEx:= concat "dao." $.table.ClassName ".Columns." $pkGoField }}
+    {{if IsNotEmpty .table.CreatedAtColumn}}
+        {{$fieldsEx = concat $fieldsEx  "," "dao." $.table.ClassName ".Columns." $.table.CreatedAtColumn.GoField}}
+    {{end}}
+    {{if IsNotEmpty .table.CreatedByColumn}}
+        {{$fieldsEx = concat $fieldsEx  "," "dao." $.table.ClassName ".Columns." $.table.CreatedByColumn.GoField}}
+    {{end}}
+    var (
+        result       sql.Result
+        rowsAffected int64
+        err          error
+    )
+    result, err = dao.{{.table.ClassName}}.Ctx(ctx).FieldsEx({{$fieldsEx}}).WherePri(req.{{$pkGoField}}).
+        Update(req)
+    if err != nil {
+		err = gerror.Wrap(err, "更新失败")
+		g.Log().Error(ctx, err)
+		return nil, err
+    }
+    rowsAffected, err = result.RowsAffected()
+    if err != nil {
+        return nil, err
+    }
+    return &model.{{.table.ClassName}}UpdateRes{
+        RowsAffected: rowsAffected,
+    }, nil
+}
+
+// DoUpdate 修改（可选字段）
+func (s *{{.table.ClassName}}Impl) DoUpdate(ctx context.Context, req *do.{{.table.ClassName}}) (*model.{{.table.ClassName}}UpdateRes, error) {
     {{ $fieldsEx:= concat "dao." $.table.ClassName ".Columns." $pkGoField }}
     {{if IsNotEmpty .table.CreatedAtColumn}}
         {{$fieldsEx = concat $fieldsEx  "," "dao." $.table.ClassName ".Columns." $.table.CreatedAtColumn.GoField}}
