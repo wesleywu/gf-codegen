@@ -1,4 +1,4 @@
-package model
+package common
 
 type ImportOptions struct {
 	BackendPackage      string

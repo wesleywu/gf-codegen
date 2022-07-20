@@ -1,8 +1,7 @@
-package model
+package common
 
 import (
 	"context"
-	"github.com/WesleyWu/gf-codegen/util"
 	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/container/gset"
 	"github.com/gogf/gf/v2/errors/gerror"
@@ -307,7 +306,7 @@ func (s *TableDef) ProcessColumns(ctx context.Context, yamlInputPath string, goM
 		if baseColumn.IsVirtual {
 			s.HasVirtualQueries = true
 			foreignTableName := baseColumn.ForeignTableName
-			foreignTable, err1 := util.LoadTableDefYaml(ctx, foreignTableName, yamlInputPath, goModuleName, cache)
+			foreignTable, err1 := LoadTableDefYaml(ctx, foreignTableName, yamlInputPath, goModuleName, cache)
 			if err1 != nil {
 				return err1
 			}
@@ -321,7 +320,7 @@ func (c *ColumnDef) SetColumnValues() error {
 	if g.IsEmpty(c.SqlType) {
 		return gerror.Newf("字段%s必须给定sqlType", c.Name)
 	}
-	dataType, isUnsigned := util.GetDataType(c.SqlType)
+	dataType, isUnsigned := GetDataType(c.SqlType)
 	columnName := c.Name
 	//设置字段名
 	if g.IsEmpty(c.GoField) {
@@ -332,11 +331,11 @@ func (c *ColumnDef) SetColumnValues() error {
 	}
 
 	if g.IsEmpty(c.GoType) {
-		if util.IsStringObject(dataType) {
+		if IsStringObject(dataType) {
 			c.GoType = "string"
-		} else if util.IsTimeObject(dataType) || util.IsDateObject(dataType) {
+		} else if IsTimeObject(dataType) || IsDateObject(dataType) {
 			c.GoType = "Time"
-		} else if util.IsNumberObject(dataType) {
+		} else if IsNumberObject(dataType) {
 			switch dataType {
 			case "float", "double", "decimal", "numeric":
 				c.GoType = "float64"
@@ -381,18 +380,18 @@ func (c *ColumnDef) SetColumnValues() error {
 	}
 
 	if g.IsEmpty(c.HtmlType) {
-		if util.IsStringObject(dataType) {
-			columnLength := util.GetColumnLength(c.SqlType)
+		if IsStringObject(dataType) {
+			columnLength := GetColumnLength(c.SqlType)
 			if columnLength >= 500 {
 				c.HtmlType = "textarea"
 			} else {
 				c.HtmlType = "input"
 			}
-		} else if util.IsDateObject(dataType) {
+		} else if IsDateObject(dataType) {
 			c.HtmlType = "date"
-		} else if util.IsTimeObject(dataType) {
+		} else if IsTimeObject(dataType) {
 			c.HtmlType = "datetime"
-		} else if util.IsNumberObject(dataType) {
+		} else if IsNumberObject(dataType) {
 			c.HtmlType = "input"
 		} else if dataType == "bit" {
 			c.HtmlType = "select"
@@ -722,7 +721,7 @@ func (s *TableDef) addRelatedInfo(ctx context.Context, relatedTableName, related
 		s.RelatedTableMap = &gmap.ListMap{}
 	}
 	relatedTable := s.RelatedTableMap.GetOrSetFunc(relatedTableName, func() interface{} {
-		t, err := util.LoadTableDefYaml(ctx, relatedTableName, yamlInputPath, goModuleName, cache)
+		t, err := LoadTableDefYaml(ctx, relatedTableName, yamlInputPath, goModuleName, cache)
 		if err != nil {
 			return err
 		}

@@ -1,4 +1,4 @@
-package main
+package internal
 
 import (
 	"context"
@@ -64,7 +64,7 @@ func (s *dbTableImporter) GenDbTableDefs(ctx context.Context, importOptions *mod
 			g.Log().Error(ctx, err)
 			return err
 		}
-		err = util.SaveTableDef(ctx, table, importOptions.YamlOutputPath)
+		err = SaveTableDef(ctx, table, importOptions.YamlOutputPath)
 		if err != nil {
 			g.Log().Error(ctx, err)
 			return err
@@ -74,7 +74,7 @@ func (s *dbTableImporter) GenDbTableDefs(ctx context.Context, importOptions *mod
 }
 
 func (s *dbTableImporter) getDbTablesByNames(ctx context.Context, tableNames []string, prefixes []string) ([]*model.TableDef, error) {
-	if getDbDriver() != "mysql" {
+	if GetDbDriver() != "mysql" {
 		return nil, gerror.New("代码生成只支持mysql数据库")
 	}
 	db := g.DB(gdb.DefaultGroupName)
@@ -97,7 +97,7 @@ func (s *dbTableImporter) getDbTablesByNames(ctx context.Context, tableNames []s
 		}
 		sql += ")"
 	}
-	var result []*tableDef
+	var result []*model.TableDef
 	err := db.GetScan(ctx, &result, sql)
 	if err != nil {
 		return nil, err
@@ -105,7 +105,7 @@ func (s *dbTableImporter) getDbTablesByNames(ctx context.Context, tableNames []s
 	return result, nil
 }
 
-func (s *dbTableImporter) fillTableDef(ctx context.Context, table *tableDef, goModuleName string) error {
+func (s *dbTableImporter) fillTableDef(ctx context.Context, table *model.TableDef, goModuleName string) error {
 	tableName := table.Name
 	// 保存列信息
 	columns, err := s.selectDbTableColumnsByName(ctx, tableName)
@@ -152,9 +152,9 @@ func (s *dbTableImporter) fillTableDef(ctx context.Context, table *tableDef, goM
 }
 
 // selectDbTableColumnsByName 根据表名称查询列信息
-func (s *dbTableImporter) selectDbTableColumnsByName(ctx context.Context, tableName string) ([]*columnDef, error) {
+func (s *dbTableImporter) selectDbTableColumnsByName(ctx context.Context, tableName string) ([]*model.ColumnDef, error) {
 	db := g.DB(gdb.DefaultGroupName)
-	var res []*columnDef
+	var res []*model.ColumnDef
 	sql := " select column_name as name," +
 		"           (case when (is_nullable = 'YES' || is_nullable = 'NO' && column_default is not null) then '0' else '1' end) as is_required," +
 		"           (case when column_key = 'PRI' then '1' else '0' end) as is_pk," +
@@ -173,23 +173,23 @@ func (s *dbTableImporter) selectDbTableColumnsByName(ctx context.Context, tableN
 }
 
 // InitTable 初始化表信息
-func (s *dbTableImporter) setTableDefaults(table *tableDef, goModuleName string, columnCount int) {
-	table.setVariableNames(goModuleName)
+func (s *dbTableImporter) setTableDefaults(table *model.TableDef, goModuleName string, columnCount int) {
+	table.SetVariableNames(goModuleName)
 	table.FunctionName = strings.ReplaceAll(table.Comment, "表", "")
 	table.TemplateCategory = "crud"
 	table.SortType = "asc"
 	table.CreateTime = gtime.Now()
 	table.UpdateTime = table.CreateTime
-	table.ColumnMap = make(map[string]*columnDef, columnCount)
-	table.Columns = []*columnDef{}
-	table.ListColumns = []*listColumnDef{}
-	table.AddColumns = []*addColumnDef{}
-	table.EditColumns = []*editColumnDef{}
-	table.QueryColumns = []*queryColumnDef{}
-	table.DetailColumns = []*detailColumnDef{}
+	table.ColumnMap = make(map[string]*model.ColumnDef, columnCount)
+	table.Columns = []*model.ColumnDef{}
+	table.ListColumns = []*model.ListColumnDef{}
+	table.AddColumns = []*model.AddColumnDef{}
+	table.EditColumns = []*model.EditColumnDef{}
+	table.QueryColumns = []*model.QueryColumnDef{}
+	table.DetailColumns = []*model.DetailColumnDef{}
 }
 
-func (s *dbTableImporter) setColumnDefaults(column *columnDef) {
+func (s *dbTableImporter) setColumnDefaults(column *model.ColumnDef) {
 	dataType := column.SqlType
 	columnName := column.Name
 	//设置字段名
@@ -201,11 +201,11 @@ func (s *dbTableImporter) setColumnDefaults(column *columnDef) {
 	}
 
 	if g.IsEmpty(column.GoType) {
-		if IsStringObject(dataType) {
+		if util.IsStringObject(dataType) {
 			column.GoType = "string"
-		} else if IsTimeObject(dataType) || IsDateObject(dataType) {
+		} else if util.IsTimeObject(dataType) || util.IsDateObject(dataType) {
 			column.GoType = "Time"
-		} else if IsNumberObject(dataType) {
+		} else if util.IsNumberObject(dataType) {
 			t, _ := gregex.ReplaceString(`\(.+\)`, "", column.SqlType)
 			t = gstr.Split(gstr.Trim(t), " ")[0]
 			t = gstr.ToLower(t)
@@ -232,18 +232,18 @@ func (s *dbTableImporter) setColumnDefaults(column *columnDef) {
 	}
 
 	if g.IsEmpty(column.HtmlType) {
-		if IsStringObject(dataType) {
-			columnLength := GetColumnLength(column.SqlType)
+		if util.IsStringObject(dataType) {
+			columnLength := util.GetColumnLength(column.SqlType)
 			if columnLength >= 500 {
 				column.HtmlType = "textarea"
 			} else {
 				column.HtmlType = "input"
 			}
-		} else if IsDateObject(dataType) {
+		} else if util.IsDateObject(dataType) {
 			column.HtmlType = "date"
-		} else if IsTimeObject(dataType) {
+		} else if util.IsTimeObject(dataType) {
 			column.HtmlType = "datetime"
-		} else if IsNumberObject(dataType) {
+		} else if util.IsNumberObject(dataType) {
 			column.HtmlType = "input"
 		} else if dataType == "bit" {
 			column.HtmlType = "select"
@@ -252,22 +252,22 @@ func (s *dbTableImporter) setColumnDefaults(column *columnDef) {
 	return
 }
 
-func (s *dbTableImporter) getAddColumnDefault(base *columnDef) *addColumnDef {
-	return &addColumnDef{
+func (s *dbTableImporter) getAddColumnDefault(base *model.ColumnDef) *model.AddColumnDef {
+	return &model.AddColumnDef{
 		Name: base.Name,
 		Sort: base.Sort,
 	}
 }
 
-func (s *dbTableImporter) getEditColumnDefault(base *columnDef) *editColumnDef {
-	return &editColumnDef{
+func (s *dbTableImporter) getEditColumnDefault(base *model.ColumnDef) *model.EditColumnDef {
+	return &model.EditColumnDef{
 		Name: base.Name,
 		Sort: base.Sort,
 	}
 }
 
-func (s *dbTableImporter) getListColumnDefault(base *columnDef) *listColumnDef {
-	return &listColumnDef{
+func (s *dbTableImporter) getListColumnDefault(base *model.ColumnDef) *model.ListColumnDef {
+	return &model.ListColumnDef{
 		Name:              base.Name,
 		Sort:              base.Sort,
 		IsOverflowTooltip: true,
@@ -275,15 +275,15 @@ func (s *dbTableImporter) getListColumnDefault(base *columnDef) *listColumnDef {
 	}
 }
 
-func (s *dbTableImporter) getQueryColumnDefault(base *columnDef) (queryColumn *queryColumnDef) {
-	return &queryColumnDef{
+func (s *dbTableImporter) getQueryColumnDefault(base *model.ColumnDef) (queryColumn *model.QueryColumnDef) {
+	return &model.QueryColumnDef{
 		Name: base.Name,
 		Sort: base.Sort,
 	}
 }
 
-func (s *dbTableImporter) getDetailColumnDefault(base *columnDef) *detailColumnDef {
-	return &detailColumnDef{
+func (s *dbTableImporter) getDetailColumnDefault(base *model.ColumnDef) *model.DetailColumnDef {
+	return &model.DetailColumnDef{
 		Name:    base.Name,
 		Sort:    base.Sort,
 		ColSpan: 12,

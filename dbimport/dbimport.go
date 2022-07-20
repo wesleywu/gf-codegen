@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/WesleyWu/gf-codegen/dbimport/internal"
 	"github.com/WesleyWu/gf-codegen/model"
+	"github.com/WesleyWu/gf-codegen/util"
 	"github.com/gogf/gf/v2/os/gcmd"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/text/gstr"
@@ -31,7 +32,7 @@ func ImportFunc(ctx context.Context, parser *gcmd.Parser) error {
 	tables := internal.SplitComma(tablesStr)
 	removeTablePrefixes := internal.SplitComma(removeTablePrefixStr)
 	tablePrefixesOnly := internal.SplitComma(tablePrefixOnlyStr)
-	goModuleName, err := internal.GetGoModuleName()
+	goModuleName, err := util.GetGoModuleName()
 	if err != nil {
 		return err
 	}
