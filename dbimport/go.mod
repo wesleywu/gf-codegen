@@ -4,8 +4,8 @@ go 1.17
 
 require (
 	github.com/WesleyWu/gf-codegen v0.0.4
-	github.com/gogf/gf/v2 v2.1.2
 	github.com/gogf/gf/contrib/drivers/mysql/v2 v2.1.2
+	github.com/gogf/gf/v2 v2.1.2
 )
 
 require (
@@ -18,6 +18,7 @@ require (
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-redis/redis/v8 v8.11.5 // indirect
+	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/grokify/html-strip-tags-go v0.0.1 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
