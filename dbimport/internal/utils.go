@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"github.com/WesleyWu/gf-codegen/common"
+	_ "github.com/gogf/gf/contrib/drivers/mysql/v2"
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"

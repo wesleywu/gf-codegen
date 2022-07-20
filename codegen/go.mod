@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/WesleyWu/gf-codegen v0.0.4
 	github.com/gogf/gf/v2 v2.1.2
+	github.com/gogf/gf/contrib/drivers/mysql/v2 v2.1.2
 )
 
 require (
