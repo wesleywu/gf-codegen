@@ -50,8 +50,13 @@ func (s *dbTableImporter) GenDbTableDefs(ctx context.Context, importOptions *Imp
 		if !g.IsEmpty(importOptions.IsRpc) {
 			table.IsRpc = importOptions.IsRpc
 		}
-		if !g.IsEmpty(importOptions.Prefix) {
-			table.BusinessName = strings.Replace(table.BusinessName, importOptions.Prefix, "", 1)
+		if !g.IsEmpty(importOptions.RemoveTablePrefixes) {
+			for _, prefix := range importOptions.RemoveTablePrefixes {
+				if gstr.Pos(table.BusinessName, prefix) == 0 {
+					table.BusinessName = strings.Replace(table.BusinessName, prefix, "", 1)
+					break
+				}
+			}
 		}
 		if err != nil {
 			g.Log().Error(ctx, err)

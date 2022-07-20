@@ -8,7 +8,6 @@ type ImportOptions struct {
 	TablePrefixesOnly   []string
 	RemoveTablePrefixes []string
 	YamlOutputPath      string
-	Prefix              string
 	SeparatePackage     bool
 	TemplateCategory    string
 	Author              string
