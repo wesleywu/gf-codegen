@@ -1,5 +1,16 @@
 # gf-codegen 代码生成
 
+### 安装 dbimport 和 codegen
+
+```
+git clone https://github.com/WesleyWu/gf-codegen.git
+cd dbimport
+go install
+cd ..
+cd codegen
+go install
+```
+
 ### 关于代码生成
 
 基于数据库表结构生成完整的前后端CRUD代码。
@@ -23,6 +34,17 @@
 * --showDetail 是否生成查看详情前端功能，缺省为 true
 * --isRpc 是否生成 DubboGo 方式的 rpc 服务，service为服务提供者（provider），api为服务消费者（consumer），缺省为 false
 
+示例
+```
+dbimport \
+  --dblink="mysql:user:password@tcp(127.0.0.1:3306)/db_name?charset=utf8mb4&parseTime=true&loc=Local" \
+  --tables=your_table1,your_table2 \
+  --removeTablePrefix=your_ \
+  --backendPackage=app/your_package \
+  --frontendModule=app/your_package \
+  --author=your_name
+```
+
 ### 2). 编辑配置文件
 
 ### 3). 生成代码
@@ -34,6 +56,13 @@
 * --yamlInputPath yaml配置文件所在路径
 * --frontendPath 前端项目在本地硬盘上的根目录
 * --frontendType 前端类型，无需指定（目前只支持 arco-design react 前端模板）
+
+示例
+```
+codegen \
+  --serviceOnly=true \
+  --tables=your_table1,your_table2
+```
 
 ## 2. `yaml`配置文件定义
 `{tableName}.yaml` 配置文件的定义文档待完善
