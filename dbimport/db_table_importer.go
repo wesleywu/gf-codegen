@@ -1,7 +1,9 @@
-package internal
+package main
 
 import (
 	"context"
+	"github.com/WesleyWu/gf-codegen/model"
+	"github.com/WesleyWu/gf-codegen/util"
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
@@ -16,7 +18,7 @@ var DbTableImporter = new(dbTableImporter)
 
 type dbTableImporter struct{}
 
-func (s *dbTableImporter) GenDbTableDefs(ctx context.Context, importOptions *ImportOptions) error {
+func (s *dbTableImporter) GenDbTableDefs(ctx context.Context, importOptions *model.ImportOptions) error {
 	tableNames := importOptions.TableNames
 	tablePrefixesOnly := importOptions.TablePrefixesOnly
 	tables, err := s.getDbTablesByNames(ctx, tableNames, tablePrefixesOnly)
@@ -62,7 +64,7 @@ func (s *dbTableImporter) GenDbTableDefs(ctx context.Context, importOptions *Imp
 			g.Log().Error(ctx, err)
 			return err
 		}
-		err = saveTableDef(ctx, table, importOptions.YamlOutputPath)
+		err = util.SaveTableDef(ctx, table, importOptions.YamlOutputPath)
 		if err != nil {
 			g.Log().Error(ctx, err)
 			return err
@@ -71,7 +73,7 @@ func (s *dbTableImporter) GenDbTableDefs(ctx context.Context, importOptions *Imp
 	return nil
 }
 
-func (s *dbTableImporter) getDbTablesByNames(ctx context.Context, tableNames []string, prefixes []string) ([]*tableDef, error) {
+func (s *dbTableImporter) getDbTablesByNames(ctx context.Context, tableNames []string, prefixes []string) ([]*model.TableDef, error) {
 	if getDbDriver() != "mysql" {
 		return nil, gerror.New("代码生成只支持mysql数据库")
 	}

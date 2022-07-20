@@ -2,7 +2,8 @@ package main
 
 import (
 	"context"
-	"github.com/WesleyWu/gf-codegen/internal"
+	"github.com/WesleyWu/gf-codegen/dbimport/internal"
+	"github.com/WesleyWu/gf-codegen/model"
 	"github.com/gogf/gf/v2/os/gcmd"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/text/gstr"
@@ -42,7 +43,7 @@ func ImportFunc(ctx context.Context, parser *gcmd.Parser) error {
 		backendPackage = goModuleName + "/" + backendPackage
 	}
 
-	importOptions := &internal.ImportOptions{
+	importOptions := &model.ImportOptions{
 		BackendPackage:      backendPackage,
 		FrontendModule:      frontendModule,
 		GoModuleName:        goModuleName,

@@ -1,8 +1,9 @@
-package internal
+package util
 
 import (
 	"context"
 	_ "embed"
+	"github.com/WesleyWu/gf-codegen/model"
 	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/errors/gerror"
@@ -31,9 +32,6 @@ var (
 	ColumnNameNotDetail = []string{"updated_by", "updated_at", "deleted_at"}
 	ColumnNameNotQuery  = []string{"updated_by", "updated_at", "deleted_at", "remark"}
 )
-
-//go:embed template/yaml/table_def.template
-var yamlTemplate string
 
 // GetDbType 获取数据库类型字段
 func GetDbType(columnType string) string {
@@ -165,31 +163,7 @@ func removeTablePrefix(tableName string, tablePrefix []string) string {
 	return tableName
 }
 
-func saveTableDef(ctx context.Context, table *tableDef, yamlOutputPath string) error {
-	curDir, err := os.Getwd()
-	if err != nil {
-		return gerror.New("获取本地路径失败")
-	}
-	yamlFile := path.Join(curDir, yamlOutputPath, table.Name+".yaml")
-
-	view := TemplateEngine()
-	tplData := g.Map{"apiVersion": "v1", "table": table}
-	var tplOut string
-	if tplOut, err = view.ParseContent(ctx, yamlTemplate, tplData); err != nil {
-		return err
-	}
-	tplOut, err = TrimBreak(tplOut)
-	if err != nil {
-		return err
-	}
-	err = WriteFile(yamlFile, tplOut, true)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func LoadTableDefYaml(ctx context.Context, tableName string, yamlInputPath string, goModuleName string, cache map[string]*tableDef) (*tableDef, error) {
+func LoadTableDefYaml(ctx context.Context, tableName string, yamlInputPath string, goModuleName string, cache map[string]*model.TableDef) (*model.TableDef, error) {
 	cached, found := cache[tableName]
 	if found {
 		return cached, nil
@@ -198,12 +172,12 @@ func LoadTableDefYaml(ctx context.Context, tableName string, yamlInputPath strin
 	if err != nil {
 		return nil, err
 	}
-	table := &tableDef{}
+	table := &model.TableDef{}
 	err = gconv.Struct(def.Table, table)
 	if err != nil {
 		return nil, err
 	}
-	table.setVariableNames(goModuleName)
+	table.SetVariableNames(goModuleName)
 	table.ColumnMap = def.Columns
 	table.VirtualColumnMap = def.VirtualColumns
 
@@ -227,9 +201,9 @@ func LoadTableDefYaml(ctx context.Context, tableName string, yamlInputPath strin
 	_, hasUpdateBy := table.ColumnMap["updated_by"]
 	table.HasUpdatedBy = hasUpdateBy
 	table.RefColumns = gmap.NewListMap()
-	table.VirtualQueryRelated = make(map[string]*tableDef)
+	table.VirtualQueryRelated = make(map[string]*model.TableDef)
 
-	err = table.processColumns(ctx, yamlInputPath, goModuleName, cache)
+	err = table.ProcessColumns(ctx, yamlInputPath, goModuleName, cache)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +211,7 @@ func LoadTableDefYaml(ctx context.Context, tableName string, yamlInputPath strin
 	return table, nil
 }
 
-func loadCodeDefYaml(ctx context.Context, tableName string, yamlInputPath string) (*codeGenDef, error) {
+func loadCodeDefYaml(ctx context.Context, tableName string, yamlInputPath string) (*model.CodeGenDef, error) {
 	curDir, err := os.Getwd()
 	if err != nil {
 		return nil, gerror.New("获取本地路径失败")
@@ -249,7 +223,7 @@ func loadCodeDefYaml(ctx context.Context, tableName string, yamlInputPath string
 		return nil, gerror.New("读取 " + yamlFile + " 失败")
 	}
 
-	var def = &codeGenDef{}
+	var def = &model.CodeGenDef{}
 	err = yaml.Unmarshal(bytes, def)
 	return def, err
 }
@@ -317,7 +291,7 @@ func WriteFile(fileName, data string, cover bool) (err error) {
 	return
 }
 
-func getDataType(sqlType string) (dataType string, isUnsigned bool) {
+func GetDataType(sqlType string) (dataType string, isUnsigned bool) {
 	t, _ := gregex.ReplaceString(`\(.+\)`, "", sqlType)
 	typeSlice := gstr.Split(gstr.Trim(t), " ")
 	if len(typeSlice) > 1 {
@@ -327,8 +301,8 @@ func getDataType(sqlType string) (dataType string, isUnsigned bool) {
 	return
 }
 
-func columnsSlice(columnMap map[string]*columnDef, isVirtual bool) []*columnDef {
-	columns := make([]*columnDef, len(columnMap))
+func columnsSlice(columnMap map[string]*model.ColumnDef, isVirtual bool) []*model.ColumnDef {
+	columns := make([]*model.ColumnDef, len(columnMap))
 	i := 0
 	for name, column := range columnMap {
 		column.Name = name
@@ -342,8 +316,8 @@ func columnsSlice(columnMap map[string]*columnDef, isVirtual bool) []*columnDef 
 	return columns
 }
 
-func listColumnsSlice(columnMap map[string]*listColumnDef) []*listColumnDef {
-	columns := make([]*listColumnDef, len(columnMap))
+func listColumnsSlice(columnMap map[string]*model.ListColumnDef) []*model.ListColumnDef {
+	columns := make([]*model.ListColumnDef, len(columnMap))
 	i := 0
 	for name, column := range columnMap {
 		column.Name = name
@@ -356,8 +330,8 @@ func listColumnsSlice(columnMap map[string]*listColumnDef) []*listColumnDef {
 	return columns
 }
 
-func addColumnsSlice(columnMap map[string]*addColumnDef) []*addColumnDef {
-	columns := make([]*addColumnDef, len(columnMap))
+func addColumnsSlice(columnMap map[string]*model.AddColumnDef) []*model.AddColumnDef {
+	columns := make([]*model.AddColumnDef, len(columnMap))
 	i := 0
 	for name, column := range columnMap {
 		column.Name = name
@@ -370,8 +344,8 @@ func addColumnsSlice(columnMap map[string]*addColumnDef) []*addColumnDef {
 	return columns
 }
 
-func editColumnsSlice(columnMap map[string]*editColumnDef) []*editColumnDef {
-	columns := make([]*editColumnDef, len(columnMap))
+func editColumnsSlice(columnMap map[string]*model.EditColumnDef) []*model.EditColumnDef {
+	columns := make([]*model.EditColumnDef, len(columnMap))
 	i := 0
 	for name, column := range columnMap {
 		column.Name = name
@@ -384,8 +358,8 @@ func editColumnsSlice(columnMap map[string]*editColumnDef) []*editColumnDef {
 	return columns
 }
 
-func queryColumnsSlice(columnMap map[string]*queryColumnDef) []*queryColumnDef {
-	columns := make([]*queryColumnDef, len(columnMap))
+func queryColumnsSlice(columnMap map[string]*model.QueryColumnDef) []*model.QueryColumnDef {
+	columns := make([]*model.QueryColumnDef, len(columnMap))
 	i := 0
 	for name, column := range columnMap {
 		column.Name = name
@@ -398,8 +372,8 @@ func queryColumnsSlice(columnMap map[string]*queryColumnDef) []*queryColumnDef {
 	return columns
 }
 
-func detailColumnsSlice(columnMap map[string]*detailColumnDef) []*detailColumnDef {
-	columns := make([]*detailColumnDef, len(columnMap))
+func detailColumnsSlice(columnMap map[string]*model.DetailColumnDef) []*model.DetailColumnDef {
+	columns := make([]*model.DetailColumnDef, len(columnMap))
 	i := 0
 	for name, column := range columnMap {
 		column.Name = name

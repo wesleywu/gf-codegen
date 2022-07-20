@@ -1,7 +1,8 @@
-package internal
+package model
 
 import (
 	"context"
+	"github.com/WesleyWu/gf-codegen/util"
 	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/container/gset"
 	"github.com/gogf/gf/v2/errors/gerror"
@@ -15,19 +16,19 @@ const (
 	RelatedTableJsonPrefix = "rltd"
 )
 
-type codeGenDef struct {
+type CodeGenDef struct {
 	ApiVersion     string                      `yaml:"apiVersion"`     // 代码生成版本，当前为 v1
-	Table          *tableDef                   `yaml:"table"`          // 数据库表基本属性
-	Columns        map[string]*columnDef       `yaml:"columns"`        // 数据库表所有字段
-	VirtualColumns map[string]*columnDef       `yaml:"virtualColumns"` // 虚拟字段，必须关联到关联表中的字段，通常用于列表、详情和查询
-	ListColumns    map[string]*listColumnDef   `yaml:"listColumns"`    // 列表界面中展示字段
-	AddColumns     map[string]*addColumnDef    `yaml:"addColumns"`     // 新增界面可输入字段
-	EditColumns    map[string]*editColumnDef   `yaml:"editColumns"`    // 编辑界面可输入字段
-	QueryColumns   map[string]*queryColumnDef  `yaml:"queryColumns"`   // 列表界面中可查询字段
-	DetailColumns  map[string]*detailColumnDef `yaml:"detailColumns"`  // 详情界面中展示字段
+	Table          *TableDef                   `yaml:"table"`          // 数据库表基本属性
+	Columns        map[string]*ColumnDef       `yaml:"columns"`        // 数据库表所有字段
+	VirtualColumns map[string]*ColumnDef       `yaml:"virtualColumns"` // 虚拟字段，必须关联到关联表中的字段，通常用于列表、详情和查询
+	ListColumns    map[string]*ListColumnDef   `yaml:"listColumns"`    // 列表界面中展示字段
+	AddColumns     map[string]*AddColumnDef    `yaml:"addColumns"`     // 新增界面可输入字段
+	EditColumns    map[string]*EditColumnDef   `yaml:"editColumns"`    // 编辑界面可输入字段
+	QueryColumns   map[string]*QueryColumnDef  `yaml:"queryColumns"`   // 列表界面中可查询字段
+	DetailColumns  map[string]*DetailColumnDef `yaml:"detailColumns"`  // 详情界面中展示字段
 }
 
-type tableDef struct { // 表属性
+type TableDef struct { // 表属性
 	Name                 string                `yaml:"name"`                       // 表名
 	Comment              string                `yaml:"comment,omitempty"`          // 表描述
 	BackendPackage       string                `yaml:"backendPackage,omitempty"`   // Go文件根目录，通常以 cartx/app/ 打头，下面可以有子目录，对应老方法的 PackageName
@@ -63,21 +64,21 @@ type tableDef struct { // 表属性
 	HasCheckboxColumn    bool                  `yaml:"-"`                          // 主表中是否有html类型为checkbox的字段
 	HasUpFileColumn      bool                  `yaml:"-"`                          // 主表+外表+关联表中是否有UpFile字段
 	HasConversion        bool                  `yaml:"-"`                          // 是否需要字段值转换
-	CreatedAtColumn      *columnDef            `yaml:"-"`                          // created_at字段
-	CreatedByColumn      *columnDef            `yaml:"-"`                          // created_by字段
+	CreatedAtColumn      *ColumnDef            `yaml:"-"`                          // created_at字段
+	CreatedByColumn      *ColumnDef            `yaml:"-"`                          // created_by字段
 	HasCreatedBy         bool                  `yaml:"-"`                          // 是否有created_by字段
 	HasUpdatedBy         bool                  `yaml:"-"`                          // 是否有updated_by字段
 	IsPkInEdit           bool                  `yaml:"-"`                          // 主键是否出现在 EditColumn 中
-	PkColumn             *columnDef            `yaml:"-"`                          // 主键列信息
-	ColumnMap            map[string]*columnDef `yaml:"-"`                          // 所有列的map，key为 Name
-	Columns              []*columnDef          `yaml:"-"`                          // 数据库表所有字段
-	VirtualColumnMap     map[string]*columnDef `yaml:"-"`                          // 所有虚拟列的map，key为 Name
-	VirtualColumns       []*columnDef          `yaml:"-"`                          // 所有虚拟字段
-	ListColumns          []*listColumnDef      `yaml:"-"`                          // 列表界面中展示字段
-	AddColumns           []*addColumnDef       `yaml:"-"`                          // 新增界面可输入字段
-	EditColumns          []*editColumnDef      `yaml:"-"`                          // 编辑界面可输入字段
-	QueryColumns         []*queryColumnDef     `yaml:"-"`                          // 列表界面中可查询字段
-	DetailColumns        []*detailColumnDef    `yaml:"-"`                          // 详情界面中展示字段
+	PkColumn             *ColumnDef            `yaml:"-"`                          // 主键列信息
+	ColumnMap            map[string]*ColumnDef `yaml:"-"`                          // 所有列的map，key为 Name
+	Columns              []*ColumnDef          `yaml:"-"`                          // 数据库表所有字段
+	VirtualColumnMap     map[string]*ColumnDef `yaml:"-"`                          // 所有虚拟列的map，key为 Name
+	VirtualColumns       []*ColumnDef          `yaml:"-"`                          // 所有虚拟字段
+	ListColumns          []*ListColumnDef      `yaml:"-"`                          // 列表界面中展示字段
+	AddColumns           []*AddColumnDef       `yaml:"-"`                          // 新增界面可输入字段
+	EditColumns          []*EditColumnDef      `yaml:"-"`                          // 编辑界面可输入字段
+	QueryColumns         []*QueryColumnDef     `yaml:"-"`                          // 列表界面中可查询字段
+	DetailColumns        []*DetailColumnDef    `yaml:"-"`                          // 详情界面中展示字段
 	OrmWithMapping       string                `yaml:"-"`                          // orm with 映射信息
 	RefColumns           *gmap.ListMap         `yaml:"-"`                          // 作为关联表时，要被查询的所有数据列信息
 	RelatedTableMap      *gmap.ListMap         `yaml:"-"`                          // 关联表map
@@ -86,14 +87,14 @@ type tableDef struct { // 表属性
 	JsonNameWhenRelated  string                `yaml:"-"`                          // 当作为 relatedTable 时的json名
 	CombinedClassName    string                `yaml:"-"`                          // 如果为二级嵌套，同ClassName；如果为三级嵌套，则为外表Class+关联表Class
 	HasVirtualQueries    bool                  `yaml:"-"`                          // 是否有虚拟字段参与查询
-	VirtualQueryRelated  map[string]*tableDef  `yaml:"-"`                          // 虚拟字段参与查询的关联表
+	VirtualQueryRelated  map[string]*TableDef  `yaml:"-"`                          // 虚拟字段参与查询的关联表
 	FkColumnNameSet      *gset.StrSet          `yaml:"-"`                          // 所有的外键字段
-	FkColumnsNotInList   []*columnDef          `yaml:"-"`                          // 没有出现在 list 列表中的 ForeignKeyColumnName 字段
+	FkColumnsNotInList   []*ColumnDef          `yaml:"-"`                          // 没有出现在 list 列表中的 ForeignKeyColumnName 字段
 	AllRelatedTableMap   *gmap.ListMap         `yaml:"-"`                          // 所有的被关联表map，包含二级嵌套和三级嵌套
 	AllRelatedTables     []interface{}         `yaml:"-"`                          // 所有的被关联表slice，包含二级嵌套和三级嵌套
 }
 
-type columnDef struct { // 字段基本属性
+type ColumnDef struct { // 字段基本属性
 	Name                   string       `yaml:"-"`                                // 字段名
 	Comment                string       `yaml:"comment,omitempty"`                // 字段描述
 	SqlType                string       `yaml:"sqlType,omitempty"`                // 字段数据类型
@@ -109,13 +110,13 @@ type columnDef struct { // 字段基本属性
 	IsRequired             bool         `yaml:"isRequired,omitempty"`             // 是否必填
 	DictType               string       `yaml:"dictType,omitempty"`               // 参照的字典名称
 	RelatedTableName       string       `yaml:"relatedTableName,omitempty"`       // 关联表名称
-	RelatedKeyColumn       *columnDef   `yaml:"-"`                                // 关联表的主键
+	RelatedKeyColumn       *ColumnDef   `yaml:"-"`                                // 关联表的主键
 	RelatedValueColumnName string       `yaml:"relatedValueColumnName,omitempty"` // 关联表Value字段名
 	IsCascade              bool         `yaml:"isCascade,omitempty"`              // 是否需要级联查询（需要与关联表联合使用，级联规则为 当前表.ParentColumnName = 级联表.CascadeColumnName）
 	ParentColumnName       string       `yaml:"parentColumnName,omitempty"`       // 级联查询时本表中的上级字段名
 	CascadeColumnName      string       `yaml:"cascadeColumnName,omitempty"`      // 级联查询时关联表中对应字段名
 	IsCascadeParent        bool         `yaml:"-"`                                // 是否为级联查询的上级字段
-	CascadeParent          *columnDef   `yaml:"-"`                                // 级联父字段指针
+	CascadeParent          *ColumnDef   `yaml:"-"`                                // 级联父字段指针
 	CascadeChildrenColumns *gset.StrSet `yaml:"-"`                                // 所有级联子字段名（按级联顺序）
 	IsVirtual              bool         `yaml:"-"`                                // 是否虚拟字段，如果是虚拟，必须给出 ForeignXXX 三个字段的正确值
 	ForeignTableName       string       `yaml:"foreignTableName,omitempty"`       // 虚拟字段实际所在的表
@@ -127,7 +128,7 @@ type columnDef struct { // 字段基本属性
 	CombinedHtmlField      string       `yaml:"-"`                                // 关联、虚拟字段的前端变量名
 }
 
-type listColumnDef struct {
+type ListColumnDef struct {
 	Name              string     `yaml:"-"`                           // 字段名
 	Sort              int        `yaml:"sort"`                        // 排序
 	HtmlType          string     `yaml:"htmlType,omitempty"`          // 前端控件类型
@@ -135,64 +136,64 @@ type listColumnDef struct {
 	MinWidth          int        `yaml:"minWidth,omitempty"`          // 列最小显示宽度
 	IsFixed           bool       `yaml:"isFixed,omitempty"`           // 在列表中是否固定在最左边
 	IsOverflowTooltip bool       `yaml:"isOverflowTooltip,omitempty"` // 在列表中是否省略一行显示不下的内容并将完整内容放在 tooltip 中
-	Base              *columnDef `yaml:"-"`                           // 对应字段
+	Base              *ColumnDef `yaml:"-"`                           // 对应字段
 	Comment           string     `yaml:"-"`                           // 字段描述
 	GoType            string     `yaml:"-"`                           // go字段类型，可以不填（会根据ColumnType自动判断）
 	GoField           string     `yaml:"-"`                           // go字段变量名，可以不填（会根据ColumnName按驼峰规则自动填充）
 	HtmlField         string     `yaml:"-"`                           // 字段前端变量名，可以不填（会根据ColumnName按小驼峰规则自动填充）
 }
 
-type addColumnDef struct {
+type AddColumnDef struct {
 	Name      string     `yaml:"-"`                  // 字段名
 	Sort      int        `yaml:"sort"`               // 排序
 	HtmlType  string     `yaml:"htmlType,omitempty"` // 前端控件类型
-	Base      *columnDef `yaml:"-"`                  // 对应字段
+	Base      *ColumnDef `yaml:"-"`                  // 对应字段
 	Comment   string     `yaml:"-"`                  // 字段描述（从字段基本属性中复制）
 	GoType    string     `yaml:"-"`                  // go字段类型（从字段基本属性中复制）
 	GoField   string     `yaml:"-"`                  // go字段变量名（从字段基本属性中复制）
 	HtmlField string     `yaml:"-"`                  // 字段前端变量名（从字段基本属性中复制）
 }
 
-type editColumnDef struct {
+type EditColumnDef struct {
 	Name       string     `yaml:"-"`                    // 字段名
 	Sort       int        `yaml:"sort"`                 // 排序
 	HtmlType   string     `yaml:"htmlType,omitempty"`   // 前端控件类型
 	IsDisabled bool       `yaml:"isDisabled,omitempty"` // 是否为不可编辑状态
-	Base       *columnDef `yaml:"-"`                    // 对应字段
+	Base       *ColumnDef `yaml:"-"`                    // 对应字段
 	Comment    string     `yaml:"-"`                    // 字段描述（从字段基本属性中复制）
 	GoType     string     `yaml:"-"`                    // go字段类型（从字段基本属性中复制）
 	GoField    string     `yaml:"-"`                    // go字段变量名（从字段基本属性中复制）
 	HtmlField  string     `yaml:"-"`                    // 字段前端变量名（从字段基本属性中复制）
 }
 
-type queryColumnDef struct {
+type QueryColumnDef struct {
 	Name            string     `yaml:"-"`                   // 字段名
 	Sort            int        `yaml:"sort"`                // 排序
 	HtmlType        string     `yaml:"htmlType,omitempty"`  // 前端控件类型
 	QueryType       string     `yaml:"queryType,omitempty"` // 查询类型 EQ|LIKE|BETWEEN
 	FieldValidation string     `yaml:"-"`                   // 查询请求中的参数验证规则
 	FieldConversion string     `yaml:"-"`                   // 查询请求中的必要类型转换
-	Base            *columnDef `yaml:"-"`                   // 对应字段
+	Base            *ColumnDef `yaml:"-"`                   // 对应字段
 	Comment         string     `yaml:"-"`                   // 字段描述（从字段基本属性中复制）
 	GoType          string     `yaml:"-"`                   // go字段类型（从字段基本属性中复制）
 	GoField         string     `yaml:"-"`                   // go字段变量名（从字段基本属性中复制）
 	HtmlField       string     `yaml:"-"`                   // 字段前端变量名（从字段基本属性中复制）
 }
 
-type detailColumnDef struct {
+type DetailColumnDef struct {
 	Name       string     `yaml:"-"`                    // 字段名
 	Sort       int        `yaml:"sort"`                 // 排序
 	HtmlType   string     `yaml:"htmlType,omitempty"`   // 前端控件类型
 	ColSpan    int        `yaml:"colSpan,omitempty"`    // 占据的栏位数（缺省为12，一行总栏位为24，即一行放两个字段的详情）
 	IsRowStart bool       `yaml:"isRowStart,omitempty"` // 是否另起新行
-	Base       *columnDef `yaml:"-"`                    // 对应字段
+	Base       *ColumnDef `yaml:"-"`                    // 对应字段
 	Comment    string     `yaml:"-"`                    // 字段描述（从字段基本属性中复制）
 	GoType     string     `yaml:"-"`                    // go字段类型（从字段基本属性中复制）
 	GoField    string     `yaml:"-"`                    // go字段变量名（从字段基本属性中复制）
 	HtmlField  string     `yaml:"-"`                    // 字段前端变量名（从字段基本属性中复制）
 }
 
-func (s *tableDef) setVariableNames(goModuleName string) {
+func (s *TableDef) SetVariableNames(goModuleName string) {
 	s.BackendPackage = gstr.TrimLeftStr(s.BackendPackage, "/")
 	s.BackendPackage = gstr.TrimRightStr(s.BackendPackage, "/")
 
@@ -214,12 +215,12 @@ func (s *tableDef) setVariableNames(goModuleName string) {
 	s.FrontendPath = gstr.CaseKebab(s.FrontendModule)
 }
 
-func (s *tableDef) processColumns(ctx context.Context, yamlInputPath string, goModuleName string, cache map[string]*tableDef) (err error) {
+func (s *TableDef) ProcessColumns(ctx context.Context, yamlInputPath string, goModuleName string, cache map[string]*TableDef) (err error) {
 	for _, column := range s.Columns {
 		if g.IsEmpty(column.Name) {
 			return gerror.Newf("表%s中的字段没有给定name", s.Name)
 		}
-		if err = column.setColumnValues(); err != nil {
+		if err = column.SetColumnValues(); err != nil {
 			return err
 		}
 		if column.IsPk {
@@ -244,7 +245,7 @@ func (s *tableDef) processColumns(ctx context.Context, yamlInputPath string, goM
 	}
 
 	for _, column := range s.VirtualColumns {
-		if err = column.setColumnValues(); err != nil {
+		if err = column.SetColumnValues(); err != nil {
 			return err
 		}
 	}
@@ -255,7 +256,7 @@ func (s *tableDef) processColumns(ctx context.Context, yamlInputPath string, goM
 		if !found {
 			return gerror.Newf("新增字段 %s 不存在于表 %s 的 columns 定义中", s.Name, columnName)
 		}
-		s.setAddColumnValues(addColumn, baseColumn)
+		s.SetAddColumnValues(addColumn, baseColumn)
 	}
 	isPkInEdit := false
 	for _, editColumn := range s.EditColumns {
@@ -267,7 +268,7 @@ func (s *tableDef) processColumns(ctx context.Context, yamlInputPath string, goM
 		if baseColumn.IsPk {
 			isPkInEdit = true
 		}
-		s.setEditColumnValues(editColumn, baseColumn)
+		s.SetEditColumnValues(editColumn, baseColumn)
 	}
 	s.IsPkInEdit = isPkInEdit
 	for _, listColumn := range s.ListColumns {
@@ -279,7 +280,7 @@ func (s *tableDef) processColumns(ctx context.Context, yamlInputPath string, goM
 				return gerror.Newf("列表字段 %s 不存在于表 %s 的 columns 和 virtualColumns 定义中", s.Name, columnName)
 			}
 		}
-		s.setListColumnValues(listColumn, baseColumn)
+		s.SetListColumnValues(listColumn, baseColumn)
 	}
 	for _, detailColumn := range s.DetailColumns {
 		columnName := detailColumn.Name
@@ -301,12 +302,12 @@ func (s *tableDef) processColumns(ctx context.Context, yamlInputPath string, goM
 				return gerror.Newf("查询字段 %s 不存在于表 %s 的 columns 和 virtualColumns 定义中", s.Name, columnName)
 			}
 		}
-		hasConversion := s.setQueryColumnValues(queryColumn, baseColumn)
+		hasConversion := s.SetQueryColumnValues(queryColumn, baseColumn)
 		s.HasConversion = s.HasConversion || hasConversion
 		if baseColumn.IsVirtual {
 			s.HasVirtualQueries = true
 			foreignTableName := baseColumn.ForeignTableName
-			foreignTable, err1 := LoadTableDefYaml(ctx, foreignTableName, yamlInputPath, goModuleName, cache)
+			foreignTable, err1 := util.LoadTableDefYaml(ctx, foreignTableName, yamlInputPath, goModuleName, cache)
 			if err1 != nil {
 				return err1
 			}
@@ -316,11 +317,11 @@ func (s *tableDef) processColumns(ctx context.Context, yamlInputPath string, goM
 	return
 }
 
-func (c *columnDef) setColumnValues() error {
+func (c *ColumnDef) SetColumnValues() error {
 	if g.IsEmpty(c.SqlType) {
 		return gerror.Newf("字段%s必须给定sqlType", c.Name)
 	}
-	dataType, isUnsigned := getDataType(c.SqlType)
+	dataType, isUnsigned := util.GetDataType(c.SqlType)
 	columnName := c.Name
 	//设置字段名
 	if g.IsEmpty(c.GoField) {
@@ -331,11 +332,11 @@ func (c *columnDef) setColumnValues() error {
 	}
 
 	if g.IsEmpty(c.GoType) {
-		if IsStringObject(dataType) {
+		if util.IsStringObject(dataType) {
 			c.GoType = "string"
-		} else if IsTimeObject(dataType) || IsDateObject(dataType) {
+		} else if util.IsTimeObject(dataType) || util.IsDateObject(dataType) {
 			c.GoType = "Time"
-		} else if IsNumberObject(dataType) {
+		} else if util.IsNumberObject(dataType) {
 			switch dataType {
 			case "float", "double", "decimal", "numeric":
 				c.GoType = "float64"
@@ -380,18 +381,18 @@ func (c *columnDef) setColumnValues() error {
 	}
 
 	if g.IsEmpty(c.HtmlType) {
-		if IsStringObject(dataType) {
-			columnLength := GetColumnLength(c.SqlType)
+		if util.IsStringObject(dataType) {
+			columnLength := util.GetColumnLength(c.SqlType)
 			if columnLength >= 500 {
 				c.HtmlType = "textarea"
 			} else {
 				c.HtmlType = "input"
 			}
-		} else if IsDateObject(dataType) {
+		} else if util.IsDateObject(dataType) {
 			c.HtmlType = "date"
-		} else if IsTimeObject(dataType) {
+		} else if util.IsTimeObject(dataType) {
 			c.HtmlType = "datetime"
-		} else if IsNumberObject(dataType) {
+		} else if util.IsNumberObject(dataType) {
 			c.HtmlType = "input"
 		} else if dataType == "bit" {
 			c.HtmlType = "select"
@@ -402,7 +403,7 @@ func (c *columnDef) setColumnValues() error {
 	return nil
 }
 
-func (s *tableDef) setAddColumnValues(addColumn *addColumnDef, baseColumn *columnDef) {
+func (s *TableDef) SetAddColumnValues(addColumn *AddColumnDef, baseColumn *ColumnDef) {
 	addColumn.Base = baseColumn
 	addColumn.Comment = baseColumn.Comment
 	addColumn.GoType = baseColumn.GoType
@@ -413,7 +414,7 @@ func (s *tableDef) setAddColumnValues(addColumn *addColumnDef, baseColumn *colum
 	}
 }
 
-func (s *tableDef) setEditColumnValues(editColumn *editColumnDef, baseColumn *columnDef) {
+func (s *TableDef) SetEditColumnValues(editColumn *EditColumnDef, baseColumn *ColumnDef) {
 	editColumn.Base = baseColumn
 	editColumn.Comment = baseColumn.Comment
 	editColumn.GoType = baseColumn.GoType
@@ -427,7 +428,7 @@ func (s *tableDef) setEditColumnValues(editColumn *editColumnDef, baseColumn *co
 	}
 }
 
-func (s *tableDef) setListColumnValues(listColumn *listColumnDef, baseColumn *columnDef) {
+func (s *TableDef) SetListColumnValues(listColumn *ListColumnDef, baseColumn *ColumnDef) {
 	listColumn.Base = baseColumn
 	listColumn.Comment = baseColumn.Comment
 	listColumn.GoType = baseColumn.GoType
@@ -438,7 +439,7 @@ func (s *tableDef) setListColumnValues(listColumn *listColumnDef, baseColumn *co
 	}
 }
 
-func (s *tableDef) setQueryColumnValues(queryColumn *queryColumnDef, baseColumn *columnDef) (hasConversion bool) {
+func (s *TableDef) SetQueryColumnValues(queryColumn *QueryColumnDef, baseColumn *ColumnDef) (hasConversion bool) {
 	columnName := baseColumn.Name
 	queryColumn.Base = baseColumn
 	queryColumn.Comment = baseColumn.Comment
@@ -513,7 +514,7 @@ func (s *tableDef) setQueryColumnValues(queryColumn *queryColumnDef, baseColumn 
 	return
 }
 
-func (s *tableDef) setDetailColumnValues(detailColumn *detailColumnDef, baseColumn *columnDef) {
+func (s *TableDef) setDetailColumnValues(detailColumn *DetailColumnDef, baseColumn *ColumnDef) {
 	detailColumn.Base = baseColumn
 	detailColumn.Comment = baseColumn.Comment
 	detailColumn.GoType = baseColumn.GoType
@@ -524,7 +525,7 @@ func (s *tableDef) setDetailColumnValues(detailColumn *detailColumnDef, baseColu
 	}
 }
 
-func (s *tableDef) processCascadeColumn(column *columnDef) (err error) {
+func (s *TableDef) processCascadeColumn(column *ColumnDef) (err error) {
 	if !column.IsCascade {
 		return
 	}
@@ -548,7 +549,7 @@ func (s *tableDef) processCascadeColumn(column *columnDef) (err error) {
 	return
 }
 
-func (s *tableDef) addChildren(column *columnDef) (err error) {
+func (s *TableDef) addChildren(column *ColumnDef) (err error) {
 	if !column.IsCascade {
 		return
 	}
@@ -572,7 +573,7 @@ func (s *tableDef) addChildren(column *columnDef) (err error) {
 	return
 }
 
-func (s *tableDef) processCascades() error {
+func (s *TableDef) processCascades() error {
 	for _, column := range s.Columns {
 		err := s.processCascadeColumn(column)
 		if err != nil {
@@ -600,7 +601,7 @@ func (s *tableDef) processCascades() error {
 	return nil
 }
 
-func (s *tableDef) processRelatedAndForeign(ctx context.Context, yamlInputPath string, goModuleName string, cache map[string]*tableDef) error {
+func (s *TableDef) processRelatedAndForeign(ctx context.Context, yamlInputPath string, goModuleName string, cache map[string]*TableDef) error {
 	for _, column := range s.Columns {
 		err := s.processColumnRelatedAndForeign(ctx, column, yamlInputPath, goModuleName, cache)
 		if err != nil {
@@ -625,15 +626,15 @@ func (s *tableDef) processRelatedAndForeign(ctx context.Context, yamlInputPath s
 	if s.RelatedTableMap != nil {
 		s.RelatedTables = s.RelatedTableMap.Values()
 		for _, relatedTable := range s.RelatedTables {
-			s.HasTimeColumn = s.HasTimeColumn || relatedTable.(*tableDef).HasTimeColumn
-			s.HasUpFileColumn = s.HasUpFileColumn || relatedTable.(*tableDef).HasUpFileColumn
-			if relatedTable.(*tableDef).RelatedTableMap == nil {
+			s.HasTimeColumn = s.HasTimeColumn || relatedTable.(*TableDef).HasTimeColumn
+			s.HasUpFileColumn = s.HasUpFileColumn || relatedTable.(*TableDef).HasUpFileColumn
+			if relatedTable.(*TableDef).RelatedTableMap == nil {
 				continue
 			}
-			relatedTable.(*tableDef).RelatedTables = relatedTable.(*tableDef).RelatedTableMap.Values()
-			for _, innerRelatedTable := range relatedTable.(*tableDef).RelatedTables {
-				s.HasTimeColumn = s.HasTimeColumn || innerRelatedTable.(*tableDef).HasTimeColumn
-				s.HasUpFileColumn = s.HasUpFileColumn || innerRelatedTable.(*tableDef).HasUpFileColumn
+			relatedTable.(*TableDef).RelatedTables = relatedTable.(*TableDef).RelatedTableMap.Values()
+			for _, innerRelatedTable := range relatedTable.(*TableDef).RelatedTables {
+				s.HasTimeColumn = s.HasTimeColumn || innerRelatedTable.(*TableDef).HasTimeColumn
+				s.HasUpFileColumn = s.HasUpFileColumn || innerRelatedTable.(*TableDef).HasUpFileColumn
 			}
 		}
 	}
@@ -645,7 +646,7 @@ func (s *tableDef) processRelatedAndForeign(ctx context.Context, yamlInputPath s
 	return nil
 }
 
-func (s *tableDef) processColumnRelatedAndForeign(ctx context.Context, column *columnDef, yamlInputPath string, goModuleName string, cache map[string]*tableDef) error {
+func (s *TableDef) processColumnRelatedAndForeign(ctx context.Context, column *ColumnDef, yamlInputPath string, goModuleName string, cache map[string]*TableDef) error {
 	if g.IsEmpty(column.RelatedTableName) && g.IsEmpty(column.ForeignTableName) {
 		return nil
 	}
@@ -716,17 +717,17 @@ func (s *tableDef) processColumnRelatedAndForeign(ctx context.Context, column *c
 	return nil
 }
 
-func (s *tableDef) addRelatedInfo(ctx context.Context, relatedTableName, relatedValueColumnName, originalColumnName string, yamlInputPath string, goModuleName string, cache map[string]*tableDef) (*tableDef, error) {
+func (s *TableDef) addRelatedInfo(ctx context.Context, relatedTableName, relatedValueColumnName, originalColumnName string, yamlInputPath string, goModuleName string, cache map[string]*TableDef) (*TableDef, error) {
 	if s.RelatedTableMap == nil {
 		s.RelatedTableMap = &gmap.ListMap{}
 	}
 	relatedTable := s.RelatedTableMap.GetOrSetFunc(relatedTableName, func() interface{} {
-		t, err := LoadTableDefYaml(ctx, relatedTableName, yamlInputPath, goModuleName, cache)
+		t, err := util.LoadTableDefYaml(ctx, relatedTableName, yamlInputPath, goModuleName, cache)
 		if err != nil {
 			return err
 		}
 		return t
-	}).(*tableDef)
+	}).(*TableDef)
 	err := relatedTable.addWithInfo(relatedValueColumnName, originalColumnName)
 	if err != nil {
 		return nil, err
@@ -734,7 +735,7 @@ func (s *tableDef) addRelatedInfo(ctx context.Context, relatedTableName, related
 	return relatedTable, nil
 }
 
-func (s *tableDef) addWithInfo(destValueColumn, originalColumn string) error {
+func (s *TableDef) addWithInfo(destValueColumn, originalColumn string) error {
 	relatedValueColumn, foundValue := s.ColumnMap[destValueColumn]
 	if !foundValue {
 		return gerror.Newf("无法找到关联表的列 %s", destValueColumn)
@@ -746,7 +747,7 @@ func (s *tableDef) addWithInfo(destValueColumn, originalColumn string) error {
 	return nil
 }
 
-func (s *tableDef) IsInList(columnName string) bool {
+func (s *TableDef) IsInList(columnName string) bool {
 	for _, c := range s.ListColumns {
 		if c.Name == columnName {
 			return true
