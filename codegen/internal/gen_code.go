@@ -30,9 +30,6 @@ var daoTemplate string
 //go:embed template/go/dao_internal.template
 var daoInternalTemplate string
 
-//go:embed template/go/do.template
-var doTemplate string
-
 //go:embed template/go/entity.template
 var entityTemplate string
 
@@ -154,16 +151,6 @@ func prepareTemplateData(table *common.TableDef, ctx context.Context) (data g.Ma
 		return
 	}
 
-	doKey := "do"
-	doValue := ""
-	var tmpDo string
-	if tmpDo, err = view.ParseContent(ctx, doTemplate, tplData); err == nil {
-		doValue = tmpDo
-		doValue, err = common.TrimBreak(doValue)
-	} else {
-		return
-	}
-
 	controllerKey := "controller"
 	controllerValue := ""
 	var tmpController string
@@ -254,7 +241,6 @@ func prepareTemplateData(table *common.TableDef, ctx context.Context) (data g.Ma
 		modelKey:       modelValue,
 		daoKey:         daoValue,
 		daoInternalKey: daoInternalValue,
-		doKey:          doValue,
 		controllerKey:  controllerValue,
 		serviceKey:     serviceValue,
 		routerKey:      routerValue,

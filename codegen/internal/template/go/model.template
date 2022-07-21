@@ -6,6 +6,7 @@
 package model
 
 import (
+	"github.com/gogf/gf/v2/frame/g"
     {{if .table.HasUpFileColumn}}
     comModel "devops.gitlab.zfkunyu.com/cartsee-go/cartx-etl/app/common/model"
     {{end}}
@@ -14,14 +15,34 @@ import (
     {{end}}
 )
 
-// {{.table.ClassName}}ListReq 分页请求参数
+// {{.table.ClassName}}ListReq 用于列表查询的查询条件参数，支持翻页和排序参数
 type {{.table.ClassName}}ListReq struct {
 	PageNum    uint32   `p:"pageNum"`  //当前页码
 	PageSize   uint32   `p:"pageSize"` //每页数
-	OrderBy    string                  //排序方式
+	OrderBy    string   `p:"orderBy"`  //排序方式
     {{range $index, $column := .table.QueryColumns}}
     {{$column.GoField}}  {{if or (eq $column.GoType "Time") (eq $column.GoType "int") (eq $column.GoType "int64") (eq $column.GoType "uint") (eq $column.GoType "uint64") (eq $column.GoType "float") (eq $column.GoType "float64") (eq $column.GoType "bool")}}{{if eq $column.QueryType "BETWEEN"}}[]{{end}}string{{else}}{{if eq $column.QueryType "BETWEEN"}}[]{{end}}{{$column.GoType}}{{end}} `p:"{{$column.HtmlField}}"{{if ne $column.FieldValidation ""}} v:"{{$column.FieldValidation}}"{{end}}` //{{$column.Comment}}
     {{end}}
+}
+
+// {{.table.ClassName}}DoListReq 用于列表查询的查询条件数据结构，支持翻页和排序参数，支持查询条件参数类型自动转换
+type {{.table.ClassName}}DoListReq struct {
+	g.Meta        `orm:"table:{{.table.Name}}, do:true"`
+	{{range $index, $column := .table.Columns}}
+    {{$column.GoField}}    {{if eq $column.GoType "Time"}}*gtime.Time{{else}}interface{}{{end}} // {{$column.Comment}}
+    {{end}}
+	PageNum       uint32 //当前页码
+	PageSize      uint32 //每页数
+	OrderBy       string //排序方式
+}
+
+// {{.table.ClassName}}DoOneReq 用于单一记录查询的查询条件数据结构，支持排序参数，支持查询条件参数类型自动转换
+type {{.table.ClassName}}DoOneReq struct {
+	g.Meta        `orm:"table:{{.table.Name}}, do:true"`
+	{{range $index, $column := .table.Columns}}
+    {{$column.GoField}}    {{if eq $column.GoType "Time"}}*gtime.Time{{else}}interface{}{{end}} // {{$column.Comment}}
+    {{end}}
+	OrderBy       string //排序方式
 }
 
 // {{.table.ClassName}}ListRes 分页返回结果
@@ -119,6 +140,14 @@ type {{.table.ClassName}}UpdateReq struct {
 // {{.table.ClassName}}UpdateRes 修改操作返回结果
 type {{.table.ClassName}}UpdateRes struct {
     RowsAffected int64 `json:"rowsAffected,omitempty"`
+}
+
+// {{.table.ClassName}}DoReq DoCreate插入、DoUpdate修改时使用的数据结构请求，支持字段类型自动转换，支持对特定字段赋值/不赋值
+type {{.table.ClassName}}DoReq struct {
+	g.Meta        `orm:"table:{{.table.Name}}, do:true"`
+	{{range $index, $column := .table.Columns}}
+    {{$column.GoField}}    {{if eq $column.GoType "Time"}}*gtime.Time{{else}}interface{}{{end}} // {{$column.Comment}}
+    {{end}}
 }
 
 // {{.table.ClassName}}DeleteReq 删除操作返回结果

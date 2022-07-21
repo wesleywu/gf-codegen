@@ -18,7 +18,6 @@ import (
     "{{.table.BackendPackage}}{{if .table.SeparatePackage}}/{{.table.GoFileName}}{{end}}/model"
     "{{.table.BackendPackage}}{{if .table.SeparatePackage}}/{{.table.GoFileName}}{{end}}/model/entity"
     "{{.table.BackendPackage}}{{if .table.SeparatePackage}}/{{.table.GoFileName}}{{end}}/service/internal/dao"
-    "{{.table.BackendPackage}}{{if .table.SeparatePackage}}/{{.table.GoFileName}}{{end}}/service/internal/do"
     {{if eq .table.TemplateCategory "tree"}}
     "devops.gitlab.zfkunyu.com/cartsee-go/cartx-etl/library"
     {{end}}
@@ -41,11 +40,13 @@ import (
 type I{{.table.ClassName}} interface {
     GetList(ctx context.Context, req *model.{{.table.ClassName}}ListReq) (*model.{{.table.ClassName}}ListRes, error)
     GetInfoById(ctx context.Context, req *model.{{.table.ClassName}}InfoReq) (*model.{{.table.ClassName}}InfoRes, error)
-    DoCreate(ctx context.Context, req *do.{{.table.ClassName}}) (*model.{{.table.ClassName}}CreateRes, error)
-    DoUpdate(ctx context.Context, req *do.{{.table.ClassName}}) (*model.{{.table.ClassName}}UpdateRes, error)
     Create(ctx context.Context, req *model.{{.table.ClassName}}CreateReq) (*model.{{.table.ClassName}}CreateRes, error)
     Update(ctx context.Context, req *model.{{.table.ClassName}}UpdateReq) (*model.{{.table.ClassName}}UpdateRes, error)
     DeleteByIds(ctx context.Context, req *model.{{.table.ClassName}}DeleteReq) (*model.{{.table.ClassName}}DeleteRes, error)
+	DoGetOne(ctx context.Context, req *model.{{.table.ClassName}}DoOneReq) (*model.{{.table.ClassName}}Item, error)
+	DoGetList(ctx context.Context, req *model.{{.table.ClassName}}DoListReq) (*model.{{.table.ClassName}}ListRes, error)
+	DoCreate(ctx context.Context, req *model.{{.table.ClassName}}DoReq) (*model.{{.table.ClassName}}CreateRes, error)
+	DoUpdate(ctx context.Context, req *model.{{.table.ClassName}}DoReq) (*model.{{.table.ClassName}}UpdateRes, error)
     {{range $index,$column:= .table.ListColumns}}
     {{if $column.IsInlineEditable}}
     Change{{$column.GoField}}(ctx context.Context, req *model.{{$.table.ClassName}}Change{{$column.GoField}}Req) (*model.{{$.table.ClassName}}Change{{$column.GoField}}Res, error)
@@ -162,41 +163,23 @@ func (s *{{.table.ClassName}}Impl) GetList(ctx context.Context, req *model.{{.ta
         req.PageSize = 10
     }
     order = "{{.table.SortColumn}} {{.table.SortType}}"
-    if req.OrderBy != ""{
+    if !g.IsEmpty(req.OrderBy) {
         order = req.OrderBy
     }
     var entities []*entity.{{.table.ClassName}}
     err = m.Fields(model.{{.table.ClassName}}Item{}).Page(page, int(req.PageSize)).Order(order).Scan(&entities)
     {{else}}
     order = "{{.table.SortColumn}} {{.table.SortType}}"
-    if req.OrderBy != ""{
+    if !g.IsEmpty(req.OrderBy) {
         order = req.OrderBy
     }
-    var entities []*entity.{{.table.ClassName}}
-    err = m.Fields(model.{{.table.ClassName}}Item{}).Order(order).Scan(&entities)
+    err = m.Fields(model.{{.table.ClassName}}Item{}).Order(order).Scan(&list)
     {{end}}
 	if err != nil {
 		g.Log().Error(ctx, err)
 		err = gerror.Wrap(err, "获取数据失败")
 		return nil, err
 	}
-    list = make([]*model.{{.table.ClassName}}Item, len(entities))
-    for k, v := range entities{
-        {{range $index, $column := .table.ListColumns}}
-        {{if eq $column.HtmlType "images" "file" "files"}}
-        {{$column.HtmlField}}:= ([]*comModel.UpFile)(nil)
-        err = gjson.DecodeTo(v.{{$column.GoField}},&{{$column.HtmlField}})
-        if err!=nil{
-            return
-        }
-        {{end}}
-        {{end}}
-        list[k] = &model.{{.table.ClassName}}Item{}
-        err = gconv.Struct(v, list[k])
-        if err != nil {
-            return nil, err
-        }
-    }
     return &model.{{.table.ClassName}}ListRes{
     		Total:       uint64(total),
     		CurrentPage: uint32(page),
@@ -204,7 +187,71 @@ func (s *{{.table.ClassName}}Impl) GetList(ctx context.Context, req *model.{{.ta
     }, nil
 }
 
-// GetInfoById 通过id获取
+// DoGetList 根据查询条件获取记录列表，支持翻页和排序参数，支持查询条件参数类型自动转换
+func (s *{{.table.ClassName}}Impl) DoGetList(ctx context.Context, req *model.{{.table.ClassName}}DoListReq) (*model.{{.table.ClassName}}ListRes, error) {
+	var (
+		total int
+		page  int
+		order string
+		list  []*model.{{.table.ClassName}}Item
+		err   error
+	)
+	m := dao.{{.table.ClassName}}.Ctx(ctx).WithAll().Where(req)
+	total, err = m.Count()
+	if err != nil {
+		g.Log().Error(ctx, err)
+		err = gerror.Wrap(err, "获取总行数失败")
+		return nil, err
+	}
+	if req.PageNum == 0 {
+		req.PageNum = 1
+	}
+	page = int(req.PageNum)
+	if req.PageSize == 0 {
+		req.PageSize = 10
+	}
+    order = "{{.table.SortColumn}} {{.table.SortType}}"
+	if !g.IsEmpty(req.OrderBy) {
+		order = req.OrderBy
+	}
+	err = m.Fields(model.{{.table.ClassName}}Item{}).Page(page, int(req.PageSize)).Order(order).Scan(&list)
+	if err != nil {
+		g.Log().Error(ctx, err)
+		err = gerror.Wrap(err, "获取数据失败")
+		return nil, err
+	}
+	return &model.{{.table.ClassName}}ListRes{
+		Total:       uint64(total),
+		CurrentPage: uint32(page),
+		List:        list,
+	}, nil
+}
+
+// DoGetOne 根据查询条件获取单条数据，支持排序参数，支持查询条件参数类型自动转换
+func (s *{{.table.ClassName}}Impl) DoGetOne(ctx context.Context, req *model.{{.table.ClassName}}DoOneReq) (*model.{{.table.ClassName}}Item, error) {
+	var (
+		list  []*model.{{.table.ClassName}}Item
+		order string
+		err   error
+	)
+	m := dao.{{.table.ClassName}}.Ctx(ctx).WithAll().Where(req)
+	order = "{{.table.SortColumn}} {{.table.SortType}}"
+	if !g.IsEmpty(req.OrderBy) {
+		order = req.OrderBy
+	}
+	err = m.Fields(model.{{.table.ClassName}}Item{}).Order(order).Limit(1).Scan(&list)
+	if err != nil {
+		g.Log().Error(ctx, err)
+		err = gerror.Wrap(err, "获取数据失败")
+		return nil, err
+	}
+	if g.IsEmpty(list) || len(list) == 0 {
+		return nil, nil
+	}
+	return list[0], nil
+}
+
+// GetInfoById 由Crud API调用。通过id获取
 func (s *{{.table.ClassName}}Impl) GetInfoById(ctx context.Context, req *model.{{.table.ClassName}}InfoReq) (*model.{{.table.ClassName}}InfoRes, error) {
     var (
 		id   {{.table.PkColumn.GoType}}
@@ -246,7 +293,7 @@ func (s *{{.table.ClassName}}Impl) GetInfoById(ctx context.Context, req *model.{
     return info, nil
 }
 
-// Create 添加（addColumns 中的全量字段，未赋值字段将被更新为 NULL 或数据库表指定的DEFAULT）
+// Create 由Crud API调用。插入记录，包括 addColumns 中的全量字段，支持对非主键且可为空字段不赋值，未赋值字段将被更新为 NULL 或数据库表指定的DEFAULT
 func (s *{{.table.ClassName}}Impl) Create(ctx context.Context, req *model.{{.table.ClassName}}CreateReq) (*model.{{.table.ClassName}}CreateRes, error) {
 	var (
 		result       sql.Result
@@ -278,8 +325,8 @@ func (s *{{.table.ClassName}}Impl) Create(ctx context.Context, req *model.{{.tab
     }, nil
 }
 
-// DoCreate 添加（可选字段）
-func (s *{{.table.ClassName}}Impl) DoCreate(ctx context.Context, req *do.{{.table.ClassName}}) (*model.{{.table.ClassName}}CreateRes, error) {
+// DoCreate 插入记录，包括表中所有字段，支持字段类型自动转换，支持对非主键且可为空字段不赋值，未赋值字段将被更新为 NULL 或数据库表指定的DEFAULT
+func (s *{{.table.ClassName}}Impl) DoCreate(ctx context.Context, req *model.{{.table.ClassName}}DoReq) (*model.{{.table.ClassName}}CreateRes, error) {
 	var (
 		result       sql.Result
 		lastInsertId int64
@@ -310,7 +357,7 @@ func (s *{{.table.ClassName}}Impl) DoCreate(ctx context.Context, req *do.{{.tabl
     }, nil
 }
 
-// Update 修改（editColumns 中的全量字段，未赋值字段将被更新为 NULL 或数据库表指定的DEFAULT）
+// Update 由Crud API调用。根据主键更新对应记录，包括 editColumns 中的全量字段。注意：本方法慎用，未赋值字段在原记录中的字段值将被更新为 NULL 或数据库表指定的DEFAULT
 func (s *{{.table.ClassName}}Impl) Update(ctx context.Context, req *model.{{.table.ClassName}}UpdateReq) (*model.{{.table.ClassName}}UpdateRes, error) {
     {{ $fieldsEx:= concat "dao." $.table.ClassName ".Columns." $pkGoField }}
     {{if IsNotEmpty .table.CreatedAtColumn}}
@@ -340,8 +387,8 @@ func (s *{{.table.ClassName}}Impl) Update(ctx context.Context, req *model.{{.tab
     }, nil
 }
 
-// DoUpdate 修改（可选字段）
-func (s *{{.table.ClassName}}Impl) DoUpdate(ctx context.Context, req *do.{{.table.ClassName}}) (*model.{{.table.ClassName}}UpdateRes, error) {
+// DoUpdate 根据主键更新对应记录，支持字段类型自动转换，支持对非主键字段赋值/不赋值，未赋值的字段不参与更新（即不会修改原记录的字段值）
+func (s *{{.table.ClassName}}Impl) DoUpdate(ctx context.Context, req *model.{{.table.ClassName}}DoReq) (*model.{{.table.ClassName}}UpdateRes, error) {
     {{ $fieldsEx:= concat "dao." $.table.ClassName ".Columns." $pkGoField }}
     {{if IsNotEmpty .table.CreatedAtColumn}}
         {{$fieldsEx = concat $fieldsEx  "," "dao." $.table.ClassName ".Columns." $.table.CreatedAtColumn.GoField}}
