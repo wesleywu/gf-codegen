@@ -12,7 +12,6 @@ import (
 	"github.com/gogf/gf/v2/text/gstr"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path"
 )
 
@@ -87,29 +86,24 @@ func CodeGenFunc(ctx context.Context, parser *gcmd.Parser) error {
 	if err != nil {
 		return err
 	}
+	err = internal.ImportModule(ctx, "github.com/gogf/gf/v2")
+	if err != nil {
+		return err
+	}
+	err = internal.ImportModule(ctx, "github.com/gogf/gf/contrib/drivers/mysql/v2")
+	if err != nil {
+		return err
+	}
 	if !serviceOnly {
-		g.Log().Info(ctx, "importing http helpers from github.com/WesleyWu/gf-httputils")
-		cmd := exec.Command("go", "get", "github.com/WesleyWu/gf-httputils")
-		bytes, err := cmd.Output()
+		err = internal.ImportModule(ctx, "github.com/WesleyWu/gf-httputils")
 		if err != nil {
 			return err
 		}
-		if len(bytes) > 0 {
-			g.Log().Info(ctx, string(bytes))
-		} else {
-			g.Log().Info(ctx, "done")
-		}
-		g.Log().Info(ctx, "executing go mod tidy")
-		cmd = exec.Command("go", "mod", "tidy")
-		bytes, err = cmd.Output()
-		if err != nil {
-			return err
-		}
-		if len(bytes) > 0 {
-			g.Log().Info(ctx, string(bytes))
-		} else {
-			g.Log().Info(ctx, "done")
-		}
+	}
+	g.Log().Info(ctx, "executing go mod tidy")
+	err = internal.ExecCommand(ctx, "go", "mod", "tidy")
+	if err != nil {
+		return err
 	}
 	return nil
 }
