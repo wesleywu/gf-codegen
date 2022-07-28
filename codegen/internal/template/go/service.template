@@ -47,6 +47,7 @@ type I{{.table.ClassName}} interface {
 	DoGetList(ctx context.Context, req *model.{{.table.ClassName}}DoListReq) (*model.{{.table.ClassName}}ListRes, error)
 	DoCreate(ctx context.Context, req *model.{{.table.ClassName}}DoReq) (*model.{{.table.ClassName}}CreateRes, error)
 	DoUpdate(ctx context.Context, req *model.{{.table.ClassName}}DoReq) (*model.{{.table.ClassName}}UpdateRes, error)
+	DoDelete(ctx context.Context, req *model.{{.table.ClassName}}DoReq) (*model.{{.table.ClassName}}DeleteRes, error)
     {{range $index,$column:= .table.ListColumns}}
     {{if $column.IsInlineEditable}}
     Change{{$column.GoField}}(ctx context.Context, req *model.{{$.table.ClassName}}Change{{$column.GoField}}Req) (*model.{{$.table.ClassName}}Change{{$column.GoField}}Res, error)
@@ -413,6 +414,35 @@ func (s *{{.table.ClassName}}Impl) DoUpdate(ctx context.Context, req *model.{{.t
         return nil, err
     }
     return &model.{{.table.ClassName}}UpdateRes{
+        RowsAffected: rowsAffected,
+    }, nil
+}
+
+// DoDelete 根据条件删除表中记录
+func (s *{{.table.ClassName}}Impl) DoDelete(ctx context.Context, req *model.{{.table.ClassName}}DoReq) (*model.{{.table.ClassName}}DeleteRes, error) {
+    {{ $fieldsEx:= concat "dao." $.table.ClassName ".Columns." $pkGoField }}
+    {{if IsNotEmpty .table.CreatedAtColumn}}
+        {{$fieldsEx = concat $fieldsEx  "," "dao." $.table.ClassName ".Columns." $.table.CreatedAtColumn.GoField}}
+    {{end}}
+    {{if IsNotEmpty .table.CreatedByColumn}}
+        {{$fieldsEx = concat $fieldsEx  "," "dao." $.table.ClassName ".Columns." $.table.CreatedByColumn.GoField}}
+    {{end}}
+    var (
+        result       sql.Result
+        rowsAffected int64
+        err          error
+    )
+	result, err = dao.{{.table.ClassName}}.Ctx(ctx).Delete(req)
+    if err != nil {
+		err = gerror.Wrap(err, "删除失败")
+		g.Log().Error(ctx, err)
+		return nil, err
+    }
+    rowsAffected, err = result.RowsAffected()
+    if err != nil {
+        return nil, err
+    }
+    return &model.{{.table.ClassName}}DeleteRes{
         RowsAffected: rowsAffected,
     }, nil
 }
