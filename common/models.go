@@ -69,6 +69,7 @@ type TableDef struct { // 表属性
 	HasUpdatedBy         bool                  `yaml:"-"`                          // 是否有updated_by字段
 	IsPkInEdit           bool                  `yaml:"-"`                          // 主键是否出现在 EditColumn 中
 	PkColumn             *ColumnDef            `yaml:"-"`                          // 主键列信息
+	PkColumns            []*ColumnDef          `yaml:"-"`                          // 主键列信息（可以有多个）
 	ColumnMap            map[string]*ColumnDef `yaml:"-"`                          // 所有列的map，key为 Name
 	Columns              []*ColumnDef          `yaml:"-"`                          // 数据库表所有字段
 	VirtualColumnMap     map[string]*ColumnDef `yaml:"-"`                          // 所有虚拟列的map，key为 Name
@@ -223,10 +224,8 @@ func (s *TableDef) ProcessColumns(ctx context.Context, yamlInputPath string, goM
 			return err
 		}
 		if column.IsPk {
-			if !g.IsEmpty(s.PkColumn) {
-				return gerror.Newf("%s 表有多个主键字段，代码生成只支持有单主键的表结构", s.Name)
-			}
 			s.PkColumn = column
+			s.PkColumns = append(s.PkColumns, column)
 		}
 		if column.GoType == "Time" {
 			s.HasTimeColumnInMain = true
@@ -239,10 +238,6 @@ func (s *TableDef) ProcessColumns(ctx context.Context, yamlInputPath string, goM
 			s.HasCheckboxColumn = true
 		}
 	}
-	if g.IsEmpty(s.PkColumn) {
-		return gerror.Newf("%s 表没有主键，代码生成只支持有单主键的表结构", s.Name)
-	}
-
 	for _, column := range s.VirtualColumns {
 		if err = column.SetColumnValues(); err != nil {
 			return err
