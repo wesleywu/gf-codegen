@@ -3,7 +3,7 @@ module github.com/WesleyWu/gf-codegen/codegen
 go 1.17
 
 require (
-	github.com/WesleyWu/gf-codegen v0.1.0
+	github.com/WesleyWu/gf-codegen v0.1.2
 	github.com/gogf/gf/contrib/drivers/mysql/v2 v2.1.2
 	github.com/gogf/gf/v2 v2.1.2
 )
@@ -34,3 +34,5 @@ require (
 	golang.org/x/text v0.3.8-0.20211105212822-18b340fc7af2 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
+
+replace github.com/WesleyWu/gf-codegen v0.1.2 => ../
