@@ -86,7 +86,7 @@ var {{.table.ClassName}} I{{.table.ClassName}} = new({{.table.ClassName}}Impl)
 {{end}}
 {{end}}
 
-// GetList 获取列表
+// GetList 由Crud API调用。根据req指定的查询条件获取记录列表
 func (s *{{.table.ClassName}}Impl) GetList(ctx context.Context, req *model.{{.table.ClassName}}ListReq) (*model.{{.table.ClassName}}ListRes, error) {
 	var (
 		total int
@@ -189,7 +189,9 @@ func (s *{{.table.ClassName}}Impl) GetList(ctx context.Context, req *model.{{.ta
     }, nil
 }
 
-// DoGetList 根据查询条件获取记录列表，支持翻页和排序参数，支持查询条件参数类型自动转换，未赋值或或赋值为nil的字段不参与条件查询
+// DoGetList 根据req指定的查询条件获取记录列表
+// 支持翻页和排序参数，支持查询条件参数类型自动转换
+// 未赋值或或赋值为nil的字段不参与条件查询
 func (s *{{.table.ClassName}}Impl) DoGetList(ctx context.Context, req *model.{{.table.ClassName}}DoListReq) (*model.{{.table.ClassName}}ListRes, error) {
 	var (
 		total int
@@ -229,7 +231,9 @@ func (s *{{.table.ClassName}}Impl) DoGetList(ctx context.Context, req *model.{{.
 	}, nil
 }
 
-// DoGetOne 根据查询条件获取单条数据，支持排序参数，支持查询条件参数类型自动转换，未赋值或或赋值为nil的字段不参与条件查询
+// DoGetOne 根据req指定的查询条件获取单条数据
+// 支持排序参数，支持查询条件参数类型自动转换
+// 未赋值或或赋值为nil的字段不参与条件查询
 func (s *{{.table.ClassName}}Impl) DoGetOne(ctx context.Context, req *model.{{.table.ClassName}}DoOneReq) (*model.{{.table.ClassName}}Item, error) {
 	var (
 		list  []*model.{{.table.ClassName}}Item
@@ -253,7 +257,7 @@ func (s *{{.table.ClassName}}Impl) DoGetOne(ctx context.Context, req *model.{{.t
 	return list[0], nil
 }
 
-// GetInfoById 由Crud API调用。通过id获取
+// GetInfoById 由Crud API调用。通过id获取记录
 func (s *{{.table.ClassName}}Impl) GetInfoById(ctx context.Context, req *model.{{.table.ClassName}}InfoReq) (*model.{{.table.ClassName}}InfoRes, error) {
     var (
 		id   {{.table.PkColumn.GoType}}
@@ -295,7 +299,9 @@ func (s *{{.table.ClassName}}Impl) GetInfoById(ctx context.Context, req *model.{
     return info, nil
 }
 
-// Create 由Crud API调用。插入记录，包括 addColumns 中的全量字段，支持对非主键且可为空字段不赋值，未赋值字段将被更新为 NULL 或数据库表指定的DEFAULT
+// Create 由Crud API调用。插入记录
+// 包括 addColumns 中的全量字段，支持对非主键且可为空字段不赋值
+// 未赋值字段将被更新为 NULL 或数据库表指定的DEFAULT
 func (s *{{.table.ClassName}}Impl) Create(ctx context.Context, req *model.{{.table.ClassName}}CreateReq) (*model.{{.table.ClassName}}CreateRes, error) {
 	var (
 		result       sql.Result
@@ -327,7 +333,9 @@ func (s *{{.table.ClassName}}Impl) Create(ctx context.Context, req *model.{{.tab
     }, nil
 }
 
-// DoCreate 插入记录，包括表中所有字段，支持字段类型自动转换，支持对非主键且可为空字段不赋值，未赋值或赋值为nil的字段将被更新为 NULL 或数据库表指定的DEFAULT
+// DoCreate 插入记录
+// 包括表中所有字段，支持字段类型自动转换，支持对非主键且可为空字段不赋值
+// 未赋值或赋值为nil的字段将被更新为 NULL 或数据库表指定的DEFAULT
 func (s *{{.table.ClassName}}Impl) DoCreate(ctx context.Context, req *model.{{.table.ClassName}}DoReq) (*model.{{.table.ClassName}}CreateRes, error) {
 	var (
 		result       sql.Result
@@ -359,7 +367,9 @@ func (s *{{.table.ClassName}}Impl) DoCreate(ctx context.Context, req *model.{{.t
     }, nil
 }
 
-// Update 由Crud API调用。根据主键更新对应记录，包括 editColumns 中的全量字段。注意：本方法慎用，未赋值字段在原记录中的字段值将被更新为 NULL 或数据库表指定的DEFAULT
+// Update 由Crud API调用。根据主键更新对应记录
+// 包括 editColumns 中的全量字段。
+// 注意：本方法慎用，未赋值字段在原记录中的字段值将被更新为 NULL 或数据库表指定的DEFAULT
 func (s *{{.table.ClassName}}Impl) Update(ctx context.Context, req *model.{{.table.ClassName}}UpdateReq) (*model.{{.table.ClassName}}UpdateRes, error) {
     {{ $fieldsEx:= concat "dao." $.table.ClassName ".Columns." $pkGoField }}
     {{if IsNotEmpty .table.CreatedAtColumn}}
@@ -389,7 +399,9 @@ func (s *{{.table.ClassName}}Impl) Update(ctx context.Context, req *model.{{.tab
     }, nil
 }
 
-// DoUpdate 根据主键更新对应记录，支持字段类型自动转换，支持对非主键字段赋值/不赋值，未赋值或赋值为nil的字段不参与更新（即不会修改原记录的字段值）
+// DoUpdate 根据主键更新对应记录
+// 支持字段类型自动转换，支持对非主键字段赋值/不赋值
+// 未赋值或赋值为nil的字段不参与更新（即不会修改原记录的字段值）
 func (s *{{.table.ClassName}}Impl) DoUpdate(ctx context.Context, req *model.{{.table.ClassName}}DoReq) (*model.{{.table.ClassName}}UpdateRes, error) {
     {{ $fieldsEx:= concat "dao." $.table.ClassName ".Columns." $pkGoField }}
     {{if IsNotEmpty .table.CreatedAtColumn}}
@@ -419,7 +431,9 @@ func (s *{{.table.ClassName}}Impl) DoUpdate(ctx context.Context, req *model.{{.t
     }, nil
 }
 
-// DoUpsert 根据主键是否存在，插入或更新对应记录，支持字段类型自动转换，支持对非主键字段赋值/不赋值，未赋值或赋值为nil的字段不参与更新（即不会修改原记录的字段值）
+// DoUpsert 根据主键（或唯一索引）是否存在且已在req中赋值，更新或插入对应记录。
+// 支持字段类型自动转换，支持对非主键字段赋值/不赋值
+// 未赋值或赋值为nil的字段不参与更新/插入（即更新时不会修改原记录的字段值）
 func (s *{{.table.ClassName}}Impl) DoUpsert(ctx context.Context, req *model.{{.table.ClassName}}DoReq) (*model.{{.table.ClassName}}CreateRes, error) {
     var (
         result       sql.Result
@@ -451,7 +465,8 @@ func (s *{{.table.ClassName}}Impl) DoUpsert(ctx context.Context, req *model.{{.t
     }, nil
 }
 
-// DoDelete 根据条件删除表中记录，未赋值或或赋值为nil的字段不参与条件查询
+// DoDelete 根据req指定的条件删除表中记录
+// 未赋值或或赋值为nil的字段不参与条件查询
 func (s *{{.table.ClassName}}Impl) DoDelete(ctx context.Context, req *model.{{.table.ClassName}}DoReq) (*model.{{.table.ClassName}}DeleteRes, error) {
     {{ $fieldsEx:= concat "dao." $.table.ClassName ".Columns." $pkGoField }}
     {{if IsNotEmpty .table.CreatedAtColumn}}
@@ -480,7 +495,7 @@ func (s *{{.table.ClassName}}Impl) DoDelete(ctx context.Context, req *model.{{.t
     }, nil
 }
 
-// DeleteByIds 删除
+// DeleteByIds 由Crud Api调用，执行按主键ID数组批量删除
 func (s *{{.table.ClassName}}Impl) DeleteByIds(ctx context.Context, req *model.{{.table.ClassName}}DeleteReq) (*model.{{.table.ClassName}}DeleteRes, error) {
 	var (
 		ids          []{{.table.PkColumn.GoType}}
