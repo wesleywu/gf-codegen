@@ -182,6 +182,23 @@ func (s *{{.table.ClassName}}Impl) GetList(ctx context.Context, req *model.{{.ta
 		err = gerror.Wrap(err, "获取数据失败")
 		return nil, err
 	}
+    list = make([]*model.{{.table.ClassName}}Item, len(entities))
+    for k, v := range entities{
+        {{range $index, $column := .table.ListColumns}}
+        {{if eq $column.HtmlType "images" "file" "files"}}
+        {{$column.HtmlField}}:= ([]*comModel.UpFile)(nil)
+        err = gjson.DecodeTo(v.{{$column.GoField}},&{{$column.HtmlField}})
+        if err!=nil{
+            return
+        }
+        {{end}}
+        {{end}}
+        list[k] = &model.{{.table.ClassName}}Item{}
+        err = gconv.Struct(v, list[k])
+        if err != nil {
+            return nil, err
+        }
+    }
     return &model.{{.table.ClassName}}ListRes{
     		Total:       uint64(total),
     		CurrentPage: uint32(page),
