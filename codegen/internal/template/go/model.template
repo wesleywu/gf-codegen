@@ -19,7 +19,7 @@ import (
 type {{.table.ClassName}}ListReq struct {
 	PageNum    uint32   `p:"pageNum" json:"pageNum,omitempty"`  //当前页码
 	PageSize   uint32   `p:"pageSize" json:"pageSize,omitempty"` //每页数
-	OrderBy    string   `p:"orderBy json:"orderBy,omitempty""`  //排序方式
+	OrderBy    string   `p:"orderBy json:"orderBy,omitempty"`  //排序方式
     {{range $index, $column := .table.QueryColumns}}
     {{$column.GoField}}  {{if or (eq $column.GoType "Time") (eq $column.GoType "int") (eq $column.GoType "int64") (eq $column.GoType "uint") (eq $column.GoType "uint64") (eq $column.GoType "float") (eq $column.GoType "float64") (eq $column.GoType "bool")}}{{if eq $column.QueryType "BETWEEN"}}[]{{end}}string{{else}}{{if eq $column.QueryType "BETWEEN"}}[]{{end}}{{$column.GoType}}{{end}} `p:"{{$column.HtmlField}}"{{if ne $column.FieldValidation ""}} v:"{{$column.FieldValidation}}"{{end}} json:"{{$column.Base.HtmlField}},omitempty"` //{{$column.Comment}}
     {{end}}
