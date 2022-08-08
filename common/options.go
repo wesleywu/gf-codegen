@@ -20,6 +20,7 @@ type GenOptions struct {
 	YamlInputPath string
 	GoModuleName  string
 	ServiceOnly   bool
+	SmartCache    bool
 	FrontendType  string
 	FrontendPath  string
 }

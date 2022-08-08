@@ -20,6 +20,7 @@ func CodeGenFunc(ctx context.Context, parser *gcmd.Parser) error {
 	tablePrefixOnlyStr := parser.GetOpt("tablePrefixOnly").String()
 	yamlInputPath := parser.GetOpt("yamlInputPath", "manifest/config/codegen_conf").String()
 	serviceOnly := parser.GetOpt("serviceOnly").Bool()
+	smartCache := parser.GetOpt("smartCache").Bool()
 	frontendType := parser.GetOpt("frontendType").String()
 	frontendPath := parser.GetOpt("frontendPath").String()
 
@@ -34,6 +35,7 @@ func CodeGenFunc(ctx context.Context, parser *gcmd.Parser) error {
 		YamlInputPath: yamlInputPath,
 		GoModuleName:  goModuleName,
 		ServiceOnly:   serviceOnly,
+		SmartCache:    smartCache,
 		FrontendType:  frontendType,
 		FrontendPath:  frontendPath,
 	}
@@ -96,6 +98,12 @@ func CodeGenFunc(ctx context.Context, parser *gcmd.Parser) error {
 	}
 	if !serviceOnly {
 		err = internal.ImportModule(ctx, "github.com/WesleyWu/gf-httputils")
+		if err != nil {
+			return err
+		}
+	}
+	if smartCache {
+		err = internal.ImportModule(ctx, "github.com/WesleyWu/gf-cache")
 		if err != nil {
 			return err
 		}

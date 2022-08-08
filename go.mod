@@ -1,6 +1,6 @@
 module github.com/WesleyWu/gf-codegen
 
-go 1.17
+go 1.18
 
 require (
 	github.com/gogf/gf/v2 v2.1.2

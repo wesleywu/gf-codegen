@@ -1,0 +1,263 @@
+package service
+
+import (
+	"context"
+    "{{.table.BackendPackage}}{{if .table.SeparatePackage}}/{{.table.GoFileName}}{{end}}/model"
+	"github.com/WesleyWu/gf-cache/cache"
+	"github.com/gogf/gf/v2/database/gdb"
+	"github.com/gogf/gf/v2/errors/gerror"
+	"github.com/gogf/gf/v2/util/gconv"
+)
+
+const {{.table.ClassName}}ServiceName = "{{.table.ClassName}}"
+
+type {{.table.ClassName}}CacheProxy struct {
+	underlyingService I{{.table.ClassName}}
+}
+
+var {{.table.ClassName}} I{{.table.ClassName}} = &{{.table.ClassName}}CacheProxy{
+	underlyingService: {{.table.ClassName}}NoCache,
+}
+
+var {{.table.ClassName}}ListResDowngraded = model.{{.table.ClassName}}ListRes{}
+var {{.table.ClassName}}ItemDowngraded = model.{{.table.ClassName}}Item{}
+var {{.table.ClassName}}InfoResDowngraded = model.{{.table.ClassName}}InfoRes{}
+
+// GetList 由Crud API调用。根据req指定的查询条件获取记录列表
+func (s *{{.table.ClassName}}CacheProxy) GetList(ctx context.Context, req *model.{{.table.ClassName}}ListReq) (*model.{{.table.ClassName}}ListRes, error) {
+	var (
+		cacheKey *string
+		result   *model.{{.table.ClassName}}ListRes
+		err      error
+	)
+	if req == nil {
+		return nil, gerror.New("Unexpected nil req")
+	}
+	if !cache.Initialized() {
+		goto underlyingProcess
+	}
+	result = &model.{{.table.ClassName}}ListRes{}
+	cacheKey = cache.GetCacheKey({{.table.ClassName}}ServiceName, "GetList", req)
+	if cacheKey == nil {
+		goto underlyingProcess
+	}
+	err = cache.RetrieveCacheTo(ctx, cacheKey, result)
+	if err != nil {
+		if err == cache.ErrLockTimeout { // 获取锁超时，返回降级的结果
+			_ = gconv.Struct({{.table.ClassName}}ListResDowngraded, result)
+			return result, nil
+		} else if err == cache.ErrNotFound { // cache 未找到，执行底层操作
+			goto underlyingProcess
+		}
+		// 其他底层错误
+		return nil, err
+	}
+	// 返回缓存的结果
+	return result, nil
+underlyingProcess:
+	result, err = s.underlyingService.GetList(ctx, req)
+	if err == nil && cacheKey != nil && result != nil && cache.Initialized() {
+		_ = cache.SaveCache(ctx, {{.table.ClassName}}ServiceName, cacheKey, result)
+	}
+	return result, err
+}
+
+// DoGetList 根据req指定的查询条件获取记录列表
+// 支持翻页和排序参数，支持查询条件参数类型自动转换
+// 未赋值或或赋值为nil的字段不参与条件查询
+func (s *{{.table.ClassName}}CacheProxy) DoGetList(ctx context.Context, req *model.{{.table.ClassName}}DoListReq) (*model.{{.table.ClassName}}ListRes, error) {
+	var (
+		cacheKey *string
+		result   *model.{{.table.ClassName}}ListRes
+		err      error
+	)
+	if req == nil {
+		return nil, gerror.New("Unexpected nil req")
+	}
+	if !cache.Initialized() {
+		goto underlyingProcess
+	}
+	result = &model.{{.table.ClassName}}ListRes{}
+	cacheKey = cache.GetCacheKey({{.table.ClassName}}ServiceName, "DoGetList", req)
+	if cacheKey == nil {
+		goto underlyingProcess
+	}
+	err = cache.RetrieveCacheTo(ctx, cacheKey, result)
+	if err != nil {
+		if err == cache.ErrLockTimeout { // 获取锁超时，返回降级的结果
+			_ = gconv.Struct({{.table.ClassName}}ListResDowngraded, result)
+			return result, nil
+		} else if err == cache.ErrNotFound { // cache 未找到，执行底层操作
+			goto underlyingProcess
+		}
+		// 其他底层错误
+		return nil, err
+	}
+	// 返回缓存的结果
+	return result, nil
+underlyingProcess:
+	result, err = s.underlyingService.DoGetList(ctx, req)
+	if err == nil && cacheKey != nil && result != nil && cache.Initialized() {
+		_ = cache.SaveCache(ctx, {{.table.ClassName}}ServiceName, cacheKey, result)
+	}
+	return result, err
+}
+
+// DoGetOne 根据req指定的查询条件获取单条数据
+// 支持排序参数，支持查询条件参数类型自动转换
+// 未赋值或或赋值为nil的字段不参与条件查询
+func (s *{{.table.ClassName}}CacheProxy) DoGetOne(ctx context.Context, req *model.{{.table.ClassName}}DoOneReq) (*model.{{.table.ClassName}}Item, error) {
+	var (
+		cacheKey *string
+		result   *model.{{.table.ClassName}}Item
+		err      error
+	)
+	if req == nil {
+		return nil, gerror.New("Unexpected nil req")
+	}
+	if !cache.Initialized() {
+		goto underlyingProcess
+	}
+	result = &model.{{.table.ClassName}}Item{}
+	cacheKey = cache.GetCacheKey({{.table.ClassName}}ServiceName, "DoGetOne", req)
+	if cacheKey == nil {
+		goto underlyingProcess
+	}
+	err = cache.RetrieveCacheTo(ctx, cacheKey, result)
+	if err != nil {
+		if err == cache.ErrLockTimeout { // 获取锁超时，返回降级的结果
+			_ = gconv.Struct({{.table.ClassName}}ItemDowngraded, result)
+			return result, nil
+		} else if err == cache.ErrNotFound { // cache 未找到，执行底层操作
+			goto underlyingProcess
+		}
+		// 其他底层错误
+		return nil, err
+	}
+	// 返回缓存的结果
+	return result, nil
+underlyingProcess:
+	result, err = s.underlyingService.DoGetOne(ctx, req)
+	if err == nil && cacheKey != nil && result != nil && cache.Initialized() {
+		_ = cache.SaveCache(ctx, {{.table.ClassName}}ServiceName, cacheKey, result)
+	}
+	return result, err
+}
+
+// GetInfoById 由Crud API调用。通过id获取记录
+func (s *{{.table.ClassName}}CacheProxy) GetInfoById(ctx context.Context, req *model.{{.table.ClassName}}InfoReq) (*model.{{.table.ClassName}}InfoRes, error) {
+	var (
+		cacheKey *string
+		result   *model.{{.table.ClassName}}InfoRes
+		err      error
+	)
+	if req == nil {
+		return nil, gerror.New("Unexpected nil req")
+	}
+	if !cache.Initialized() {
+		goto underlyingProcess
+	}
+	cacheKey = cache.GetCacheKey({{.table.ClassName}}ServiceName, "GetInfoById", req)
+	if cacheKey == nil {
+		goto underlyingProcess
+	}
+	result = &model.{{.table.ClassName}}InfoRes{}
+	err = cache.RetrieveCacheTo(ctx, cacheKey, result)
+	if err != nil {
+		if err == cache.ErrLockTimeout { // 获取锁超时，返回降级的结果
+			_ = gconv.Struct({{.table.ClassName}}InfoResDowngraded, result)
+			return result, nil
+		} else if err == cache.ErrNotFound { // cache 未找到，执行底层操作
+			goto underlyingProcess
+		}
+		// 其他底层错误
+		return nil, err
+	}
+	// 返回缓存的结果
+	return result, nil
+underlyingProcess:
+	result, err = s.underlyingService.GetInfoById(ctx, req)
+	if err == nil && cacheKey != nil && result != nil && cache.Initialized() {
+		_ = cache.SaveCache(ctx, {{.table.ClassName}}ServiceName, cacheKey, result)
+	}
+	return result, err
+
+}
+
+// Create 由Crud API调用。插入记录
+// 包括 addColumns 中的全量字段，支持对非主键且可为空字段不赋值
+// 未赋值字段将被更新为 NULL 或数据库表指定的DEFAULT
+func (s *{{.table.ClassName}}CacheProxy) Create(ctx context.Context, req *model.{{.table.ClassName}}CreateReq) (*model.{{.table.ClassName}}CreateRes, error) {
+	result, err := s.underlyingService.Create(ctx, req)
+	if err == nil && result.RowsAffected > 0 && cache.Initialized() {
+		_ = cache.ClearCache(ctx, {{.table.ClassName}}ServiceName)
+	}
+	return result, err
+}
+
+// DoCreate 插入记录
+// 包括表中所有字段，支持字段类型自动转换，支持对非主键且可为空字段不赋值
+// 未赋值或赋值为nil的字段将被更新为 NULL 或数据库表指定的DEFAULT
+func (s *{{.table.ClassName}}CacheProxy) DoCreate(ctx context.Context, req *model.{{.table.ClassName}}DoReq) (*model.{{.table.ClassName}}CreateRes, error) {
+	result, err := s.underlyingService.DoCreate(ctx, req)
+	if err == nil && result.RowsAffected > 0 && cache.Initialized() {
+		_ = cache.ClearCache(ctx, {{.table.ClassName}}ServiceName)
+	}
+	return result, err
+}
+
+// Update 由Crud API调用。根据主键更新对应记录
+// 包括 editColumns 中的全量字段。
+// 注意：本方法慎用，未赋值字段在原记录中的字段值将被更新为 NULL 或数据库表指定的DEFAULT
+func (s *{{.table.ClassName}}CacheProxy) Update(ctx context.Context, req *model.{{.table.ClassName}}UpdateReq) (*model.{{.table.ClassName}}UpdateRes, error) {
+	result, err := s.underlyingService.Update(ctx, req)
+	if err == nil && result.RowsAffected > 0 && cache.Initialized() {
+		_ = cache.ClearCache(ctx, {{.table.ClassName}}ServiceName)
+	}
+	return result, err
+}
+
+// DoUpdate 根据主键更新对应记录
+// 支持字段类型自动转换，支持对非主键字段赋值/不赋值
+// 未赋值或赋值为nil的字段不参与更新（即不会修改原记录的字段值）
+func (s *{{.table.ClassName}}CacheProxy) DoUpdate(ctx context.Context, req *model.{{.table.ClassName}}DoReq) (*model.{{.table.ClassName}}UpdateRes, error) {
+	result, err := s.underlyingService.DoUpdate(ctx, req)
+	if err == nil && result.RowsAffected > 0 && cache.Initialized() {
+		_ = cache.ClearCache(ctx, {{.table.ClassName}}ServiceName)
+	}
+	return result, err
+}
+
+// DoUpsert 根据主键（或唯一索引）是否存在且已在req中赋值，更新或插入对应记录。
+// 支持字段类型自动转换，支持对非主键字段赋值/不赋值
+// 未赋值或赋值为nil的字段不参与更新/插入（即更新时不会修改原记录的字段值）
+func (s *{{.table.ClassName}}CacheProxy) DoUpsert(ctx context.Context, req *model.{{.table.ClassName}}DoReq) (*model.{{.table.ClassName}}CreateRes, error) {
+	result, err := s.underlyingService.DoUpsert(ctx, req)
+	if err == nil && result.RowsAffected > 0 && cache.Initialized() {
+		_ = cache.ClearCache(ctx, {{.table.ClassName}}ServiceName)
+	}
+	return result, err
+}
+
+// DoDelete 根据req指定的条件删除表中记录
+// 未赋值或或赋值为nil的字段不参与条件查询
+func (s *{{.table.ClassName}}CacheProxy) DoDelete(ctx context.Context, req *model.{{.table.ClassName}}DoReq) (*model.{{.table.ClassName}}DeleteRes, error) {
+	result, err := s.underlyingService.DoDelete(ctx, req)
+	if err == nil && result.RowsAffected > 0 && cache.Initialized() {
+		_ = cache.ClearCache(ctx, {{.table.ClassName}}ServiceName)
+	}
+	return result, err
+}
+
+// DeleteByIds 由Crud Api调用，执行按主键ID数组批量删除
+func (s *{{.table.ClassName}}CacheProxy) DeleteByIds(ctx context.Context, req *model.{{.table.ClassName}}DeleteReq) (*model.{{.table.ClassName}}DeleteRes, error) {
+	result, err := s.underlyingService.DeleteByIds(ctx, req)
+	if err == nil && result.RowsAffected > 0 && cache.Initialized() {
+		_ = cache.ClearCache(ctx, {{.table.ClassName}}ServiceName)
+	}
+	return result, err
+}
+
+func (s *{{.table.ClassName}}CacheProxy) GetPkReference(ctx context.Context) *gdb.Model {
+	return s.underlyingService.GetPkReference(ctx)
+}

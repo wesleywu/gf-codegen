@@ -67,7 +67,7 @@ type {{.table.ClassName}}Impl struct {
     {{end}}
 }
 
-var {{.table.ClassName}} I{{.table.ClassName}} = new({{.table.ClassName}}Impl)
+var {{.table.ClassName}}{{if .options.SmartCache}}NoCache{{end}} I{{.table.ClassName}} = new({{.table.ClassName}}Impl)
 
 {{$pk:=""}}
 {{$pkGoField:=""}}

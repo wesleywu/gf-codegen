@@ -45,6 +45,9 @@ var routerTemplate string
 //go:embed template/go/service.template
 var serviceTemplate string
 
+//go:embed template/go/service.cache.proxy.template
+var serviceCacheProxyTemplate string
+
 //go:embed template/js/api.template
 var jsapiTemplate string
 
@@ -106,9 +109,9 @@ func GenCodeByTableDefYaml(ctx context.Context, tableName string, genOptions *co
 }
 
 // 获取生成所需数据
-func prepareTemplateData(table *common.TableDef, ctx context.Context) (data g.MapStrStr, err error) {
+func prepareTemplateData(ctx context.Context, table *common.TableDef, genOptions *common.GenOptions) (data g.MapStrStr, err error) {
 	//树形菜单选项
-	tplData := g.Map{"table": table}
+	tplData := g.Map{"table": table, "options": genOptions}
 	view := common.TemplateEngine()
 
 	entityKey := "entity"
@@ -167,6 +170,16 @@ func prepareTemplateData(table *common.TableDef, ctx context.Context) (data g.Ma
 	if tmpService, err = view.ParseContent(ctx, serviceTemplate, tplData); err == nil {
 		serviceValue = tmpService
 		serviceValue, err = common.TrimBreak(serviceValue)
+	} else {
+		return
+	}
+
+	serviceCacheProxyKey := "serviceCacheProxy"
+	serviceCacheProxyValue := ""
+	var tmpServiceCacheProxy string
+	if tmpServiceCacheProxy, err = view.ParseContent(ctx, serviceCacheProxyTemplate, tplData); err == nil {
+		serviceCacheProxyValue = tmpServiceCacheProxy
+		serviceCacheProxyValue, err = common.TrimBreak(serviceCacheProxyValue)
 	} else {
 		return
 	}
@@ -237,18 +250,19 @@ func prepareTemplateData(table *common.TableDef, ctx context.Context) (data g.Ma
 	}
 
 	data = g.MapStrStr{
-		entityKey:      entityValue,
-		modelKey:       modelValue,
-		daoKey:         daoValue,
-		daoInternalKey: daoInternalValue,
-		controllerKey:  controllerValue,
-		serviceKey:     serviceValue,
-		routerKey:      routerValue,
-		protobufKey:    protobufValue,
-		providerKey:    providerValue,
-		sqlKey:         sqlValue,
-		jsApiKey:       jsApiValue,
-		vueKey:         vueValue,
+		entityKey:            entityValue,
+		modelKey:             modelValue,
+		daoKey:               daoValue,
+		daoInternalKey:       daoInternalValue,
+		controllerKey:        controllerValue,
+		serviceKey:           serviceValue,
+		serviceCacheProxyKey: serviceCacheProxyValue,
+		routerKey:            routerValue,
+		protobufKey:          protobufValue,
+		providerKey:          providerValue,
+		sqlKey:               sqlValue,
+		jsApiKey:             jsApiValue,
+		vueKey:               vueValue,
 	}
 	return
 }
@@ -273,7 +287,7 @@ func doGenCode(ctx context.Context, table *common.TableDef, genOptions *common.G
 		return err
 	}
 	var templateData g.MapStrStr
-	templateData, err = prepareTemplateData(table, ctx)
+	templateData, err = prepareTemplateData(ctx, table, genOptions)
 	if err != nil {
 		return err
 	}
@@ -395,6 +409,15 @@ func doGenCode(ctx context.Context, table *common.TableDef, genOptions *common.G
 				path = strings.Join([]string{curDir, "/", packageName, "/service/", goFileName, ".go"}, "")
 			}
 			err = common.WriteFile(path, code, table.Overwrite)
+		case "serviceCacheProxy":
+			if genOptions.SmartCache {
+				if table.SeparatePackage {
+					path = strings.Join([]string{curDir, "/", packageName, "/", goFileName, "/service/", goFileName + "_proxy", ".go"}, "")
+				} else {
+					path = strings.Join([]string{curDir, "/", packageName, "/service/", goFileName + "_proxy", ".go"}, "")
+				}
+				err = common.WriteFile(path, code, table.Overwrite)
+			}
 		case "sql":
 			if g.IsEmpty(frontDir) {
 				break
