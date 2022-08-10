@@ -17,9 +17,9 @@ import (
 
 // {{.table.ClassName}}ListReq 用于列表查询的查询条件参数，支持翻页和排序参数
 type {{.table.ClassName}}ListReq struct {
-	PageNum    uint32   `p:"pageNum" json:"pageNum,omitempty"`  //当前页码
-	PageSize   uint32   `p:"pageSize" json:"pageSize,omitempty"` //每页数
-	OrderBy    string   `p:"orderBy" json:"orderBy,omitempty"`  //排序方式
+	PageNum    uint32   `p:"pageNum" json:"pageNum,omitempty"`  // 当前页码
+	PageSize   uint32   `p:"pageSize" json:"pageSize,omitempty"` // 每页记录数
+	OrderBy    string   `p:"orderBy" json:"orderBy,omitempty"`  // 排序方式，格式为 "COL_A DESC, COL_B"
     {{range $index, $column := .table.QueryColumns}}
     {{$column.GoField}}  {{if or (eq $column.GoType "Time") (eq $column.GoType "int") (eq $column.GoType "int64") (eq $column.GoType "uint") (eq $column.GoType "uint64") (eq $column.GoType "float") (eq $column.GoType "float64") (eq $column.GoType "bool")}}{{if eq $column.QueryType "BETWEEN"}}[]{{end}}string{{else}}{{if eq $column.QueryType "BETWEEN"}}[]{{end}}{{$column.GoType}}{{end}} `p:"{{$column.HtmlField}}"{{if ne $column.FieldValidation ""}} v:"{{$column.FieldValidation}}"{{end}} json:"{{$column.Base.HtmlField}},omitempty"` //{{$column.Comment}}
     {{end}}
@@ -31,9 +31,9 @@ type {{.table.ClassName}}DoListReq struct {
 	{{range $index, $column := .table.Columns}}
     {{$column.GoField}}    {{if eq $column.GoType "Time"}}*gtime.Time{{else}}interface{}{{end}} `json:"{{$column.HtmlField}},omitempty"` // {{$column.Comment}}
     {{end}}
-	PageNum       uint32 `json:"pageNum,omitempty"`  //当前页码
-	PageSize      uint32 `json:"pageSize,omitempty"` //每页数
-	OrderBy       string `json:"orderBy,omitempty"`  //排序方式
+	PageNum       uint32 `json:"pageNum,omitempty"`  // 当前页码
+	PageSize      uint32 `json:"pageSize,omitempty"` // 每页记录数
+	OrderBy       string `json:"orderBy,omitempty"`  // 排序方式
 }
 
 // {{.table.ClassName}}DoOneReq 用于单一记录查询的查询条件数据结构，支持排序参数，支持查询条件参数类型自动转换
@@ -42,14 +42,14 @@ type {{.table.ClassName}}DoOneReq struct {
 	{{range $index, $column := .table.Columns}}
     {{$column.GoField}}    {{if eq $column.GoType "Time"}}*gtime.Time{{else}}interface{}{{end}} `json:"{{$column.HtmlField}},omitempty"` // {{$column.Comment}}
     {{end}}
-	OrderBy       string `json:"orderBy,omitempty"` //排序方式
+	OrderBy       string `json:"orderBy,omitempty"` // 排序方式
 }
 
 // {{.table.ClassName}}ListRes 分页返回结果
 type {{.table.ClassName}}ListRes struct {
-	Total       uint64         `json:"total,omitempty"`
-	CurrentPage uint32         `json:"currentPage,omitempty"`
-	List        []*{{.table.ClassName}}Item `json:"list,omitempty"`
+	Total       uint64         `json:"total,omitempty"` // 记录总数
+	CurrentPage uint32         `json:"currentPage,omitempty"` // 当前页码
+	List        []*{{.table.ClassName}}Item `json:"list,omitempty"` // 当前页记录列表
 }
 
 // {{.table.ClassName}}Item 列表返回结果
@@ -57,21 +57,21 @@ type {{.table.ClassName}}Item struct {
   {{if eq .table.TemplateCategory "tree"}}
     {{range $index, $column := .table.Columns}}
       {{if or (eq $column.HtmlField $.table.TreeCode) (eq $column.HtmlField $.table.TreeParentCode) (eq $column.HtmlField $.table.TreeName) }}
-    {{$column.GoField}}  {{if eq $column.GoType "Time"}}*gtime.Time{{else if eq $column.HtmlType "images" "file" "files"}}[]*comModel.UpFile{{else}}{{$column.GoType}}{{end}}   `json:"{{$column.HtmlField}},omitempty"`
+    {{$column.GoField}}  {{if eq $column.GoType "Time"}}*gtime.Time{{else if eq $column.HtmlType "images" "file" "files"}}[]*comModel.UpFile{{else}}{{$column.GoType}}{{end}}   `json:"{{$column.HtmlField}},omitempty"` // {{$column.Comment}}
       {{end}}
     {{end}}
     {{range $index, $column := .table.ListColumns}}
       {{if and (ne $column.HtmlField $.table.TreeCode) (ne $column.HtmlField $.table.TreeParentCode) (ne $column.HtmlField $.table.TreeName) }}
-    {{$column.GoField}}  {{if eq $column.GoType "Time"}}*gtime.Time{{else if eq $column.HtmlType "images" "file" "files"}}[]*comModel.UpFile{{else}}{{$column.GoType}}{{end}}   `json:"{{$column.HtmlField}},omitempty"`
+    {{$column.GoField}}  {{if eq $column.GoType "Time"}}*gtime.Time{{else if eq $column.HtmlType "images" "file" "files"}}[]*comModel.UpFile{{else}}{{$column.GoType}}{{end}}   `json:"{{$column.HtmlField}},omitempty"` // {{$column.Comment}}
       {{end}}
     {{end}}
   {{else}}
     {{range $index, $column := .table.ListColumns}}
-    {{$column.GoField}}  {{if eq $column.GoType "Time"}}*gtime.Time{{else if eq $column.HtmlType "images" "file" "files"}}[]*comModel.UpFile{{else}}{{$column.GoType}}{{end}}   `json:"{{$column.HtmlField}},omitempty"`
+    {{$column.GoField}}  {{if eq $column.GoType "Time"}}*gtime.Time{{else if eq $column.HtmlType "images" "file" "files"}}[]*comModel.UpFile{{else}}{{$column.GoType}}{{end}}   `json:"{{$column.HtmlField}},omitempty"` // {{$column.Comment}}
     {{end}}
   {{end}}
   {{range $index, $column := .table.FkColumnsNotInList}}
-    {{$column.GoField}}  {{if eq $column.GoType "Time"}}*gtime.Time{{else if eq $column.HtmlType "images" "file" "files"}}[]*comModel.UpFile{{else}}{{$column.GoType}}{{end}}   `json:"{{$column.HtmlField}},omitempty"`
+    {{$column.GoField}}  {{if eq $column.GoType "Time"}}*gtime.Time{{else if eq $column.HtmlType "images" "file" "files"}}[]*comModel.UpFile{{else}}{{$column.GoType}}{{end}}   `json:"{{$column.HtmlField}},omitempty"` // {{$column.Comment}}
   {{end}}
   {{range $ti, $relatedTable := .table.RelatedTables}}
     {{$relatedTable.ClassNameWhenRelated}}   *{{$relatedTable.ClassNameWhenRelated}}  `json:"{{$relatedTable.JsonNameWhenRelated}},omitempty"`
@@ -101,13 +101,13 @@ type {{$innerRelatedTable.ClassNameWhenRelated}} struct {
 
 // {{.table.ClassName}}InfoReq 数据查询参数
 type {{.table.ClassName}}InfoReq struct {
-    Id {{.table.PkColumn.GoType}} `p:"id" json:"id,omitempty"`
+    Id {{.table.PkColumn.GoType}} `p:"id" json:"id,omitempty"`  // 主键
 }
 
 // {{.table.ClassName}}InfoRes 数据返回结果
 type {{.table.ClassName}}InfoRes struct {
     {{range $index, $column := .table.Columns}}
-    {{$column.GoField}}  {{if eq $column.GoType "Time"}}*gtime.Time{{else if eq $column.HtmlType "images" "file" "files"}}[]*comModel.UpFile{{else}}{{$column.GoType}}{{end}}   `json:"{{$column.HtmlField}},omitempty"`
+    {{$column.GoField}}  {{if eq $column.GoType "Time"}}*gtime.Time{{else if eq $column.HtmlType "images" "file" "files"}}[]*comModel.UpFile{{else}}{{$column.GoType}}{{end}}   `json:"{{$column.HtmlField}},omitempty"` // {{$column.Comment}}
     {{end}}
     {{range $ti, $relatedTable := .table.RelatedTables}}
     {{$relatedTable.ClassNameWhenRelated}}   *{{$relatedTable.ClassNameWhenRelated}}  `json:"{{$relatedTable.JsonNameWhenRelated}},omitempty"`
@@ -117,23 +117,23 @@ type {{.table.ClassName}}InfoRes struct {
 // {{.table.ClassName}}CreateReq 添加操作请求参数
 type {{.table.ClassName}}CreateReq struct {
     {{range $index, $column := .table.AddColumns}}
-    {{$column.GoField}}  {{if eq $column.GoType "Time"}}*gtime.Time{{else if eq $column.HtmlType "images" "file" "files"}}[]*comModel.UpFile{{else}}{{$column.GoType}}{{end}}   `p:"{{$column.HtmlField}}"{{if $column.Base.IsRequired}} v:"required#{{$column.Comment}}不能为空"{{end}} json:"{{$column.HtmlField}},omitempty"`
+    {{$column.GoField}}  {{if eq $column.GoType "Time"}}*gtime.Time{{else if eq $column.HtmlType "images" "file" "files"}}[]*comModel.UpFile{{else}}{{$column.GoType}}{{end}}   `p:"{{$column.HtmlField}}"{{if $column.Base.IsRequired}} v:"required#{{$column.Comment}}不能为空"{{end}} json:"{{$column.HtmlField}},omitempty"` // {{$column.Comment}}
     {{end}}
 }
 
 // {{.table.ClassName}}CreateRes 添加操作返回结果
 type {{.table.ClassName}}CreateRes struct {
-    LastInsertId int64 `json:"lastInsertId,omitempty"`
-    RowsAffected int64 `json:"rowsAffected,omitempty"`
+    LastInsertId int64 `json:"lastInsertId,omitempty"` // 上一条INSERT插入的记录主键，当主键为自增长时有效
+    RowsAffected int64 `json:"rowsAffected,omitempty"` // 影响的条数
 }
 
 // {{.table.ClassName}}UpdateReq 修改操作请求参数
 type {{.table.ClassName}}UpdateReq struct {
     {{if not .table.IsPkInEdit}}
-    {{.table.PkColumn.GoField}}    {{.table.PkColumn.GoType}}  `p:"{{.table.PkColumn.HtmlField}}" v:"required#主键ID不能为空" json:"{{.table.PkColumn.HtmlField}},omitempty"`
+    {{.table.PkColumn.GoField}}    {{.table.PkColumn.GoType}}  `p:"{{.table.PkColumn.HtmlField}}" v:"required#主键ID不能为空" json:"{{.table.PkColumn.HtmlField}},omitempty"`  // {{.table.PkColumn.Comment}}
     {{end}}
     {{range $index, $column := .table.EditColumns}}
-    {{$column.GoField}}  {{if eq $column.GoType "Time"}}*gtime.Time{{else if eq $column.HtmlType "images" "file" "files"}}[]*comModel.UpFile{{else}}{{$column.GoType}}{{end}} `p:"{{$column.HtmlField}}"{{if $column.Base.IsRequired}} v:"required#{{$column.Comment}}不能为空"{{end}} json:"{{$column.HtmlField}},omitempty"`
+    {{$column.GoField}}  {{if eq $column.GoType "Time"}}*gtime.Time{{else if eq $column.HtmlType "images" "file" "files"}}[]*comModel.UpFile{{else}}{{$column.GoType}}{{end}} `p:"{{$column.HtmlField}}"{{if $column.Base.IsRequired}} v:"required#{{$column.Comment}}不能为空"{{end}} json:"{{$column.HtmlField}},omitempty"`  // {{$column.Comment}}
     {{end}}
 }
 
@@ -152,25 +152,25 @@ type {{.table.ClassName}}DoReq struct {
 
 // {{.table.ClassName}}DeleteReq 删除操作返回结果
 type {{.table.ClassName}}DeleteReq struct {
-    Ids []{{.table.PkColumn.GoType}} `p:"ids" v:"required#主键ID数组不能为空" json:"ids,omitempty"`
+    Ids []{{.table.PkColumn.GoType}} `p:"ids" v:"required#主键ID数组不能为空" json:"ids,omitempty"` // {{.table.PkColumn.Comment}}
 }
 
 // {{.table.ClassName}}DeleteRes 删除操作返回结果
 type {{.table.ClassName}}DeleteRes struct {
-    RowsAffected int64 `json:"rowsAffected,omitempty"`
+    RowsAffected int64 `json:"rowsAffected,omitempty"` // 影响的条数
 }
 
 {{range $index,$column:= .table.ListColumns}}
 {{if and $column.IsInlineEditable}}
 // {{$.table.ClassName}}Change{{$column.GoField}}Req 设置状态请求参数
 type {{$.table.ClassName}}Change{{$column.GoField}}Req struct {
-	{{$.table.PkColumn.GoField}}    {{$.table.PkColumn.GoType}}  `p:"{{$.table.PkColumn.HtmlField}}" v:"required#主键ID不能为空"`
-	{{$column.GoField}} {{$column.GoType}}   `p:"{{$column.HtmlField}}" v:"required#{{$column.Comment}}不能为空" `json:"{{$column.HtmlField}},omitempty"`
+	{{$.table.PkColumn.GoField}}    {{$.table.PkColumn.GoType}}  `p:"{{$.table.PkColumn.HtmlField}}" v:"required#主键ID不能为空"` // {{.table.PkColumn.Comment}}
+	{{$column.GoField}} {{$column.GoType}}   `p:"{{$column.HtmlField}}" v:"required#{{$column.Comment}}不能为空" `json:"{{$column.HtmlField}},omitempty"` // {{$column.Comment}}
 }
 
 // {{$.table.ClassName}}Change{{$column.GoField}}Res 设置状态返回结果
 type {{$.table.ClassName}}Change{{$column.GoField}}Res struct {
-    RowsAffected int64 `json:"rowsAffected,omitempty"`
+    RowsAffected int64 `json:"rowsAffected,omitempty"` // 影响的条数
 }
 
 {{end}}
@@ -179,6 +179,6 @@ type {{$.table.ClassName}}Change{{$column.GoField}}Res struct {
 {{if eq .table.TemplateCategory "tree"}}
 // {{.table.ClassName}}GetChildrenIdsRes 获取子记录ID列表返回结果
 type {{.table.ClassName}}GetChildrenIdsRes struct {
-    Ids []{{.table.PkColumn.GoType}} `json:"ids" `json:"ids,omitempty"`
+    Ids []{{.table.PkColumn.GoType}} `json:"ids" `json:"ids,omitempty"` // {{.table.PkColumn.Comment}}数组
 }
 {{end}}
