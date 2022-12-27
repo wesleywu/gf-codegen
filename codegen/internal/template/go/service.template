@@ -89,7 +89,7 @@ var {{.table.ClassName}}{{if .options.SmartCache}}NoCache{{end}} I{{.table.Class
 // GetList 由Crud API调用。根据req指定的查询条件获取记录列表
 func (s *{{.table.ClassName}}Impl) GetList(ctx context.Context, req *model.{{.table.ClassName}}ListReq) (*model.{{.table.ClassName}}ListRes, error) {
 	var (
-		total int
+		total int64
 		page  int
 		order string
 		list  []*model.{{.table.ClassName}}Item
@@ -211,7 +211,7 @@ func (s *{{.table.ClassName}}Impl) GetList(ctx context.Context, req *model.{{.ta
 // 未赋值或或赋值为nil的字段不参与条件查询
 func (s *{{.table.ClassName}}Impl) DoGetList(ctx context.Context, req *model.{{.table.ClassName}}DoListReq) (*model.{{.table.ClassName}}ListRes, error) {
 	var (
-		total int
+		total int64
 		page  int
 		order string
 		list  []*model.{{.table.ClassName}}Item
