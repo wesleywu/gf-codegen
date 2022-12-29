@@ -116,7 +116,7 @@ func (s *dbTableImporter) fillTableDef(ctx context.Context, table *common.TableD
 		//s.setColumnDefaults(column)
 		columnName := column.Name
 		if column.IsPk {
-			table.PkColumn = column
+			table.PkColumns[columnName] = column
 			table.SortColumn = columnName
 		}
 		if columnName == "created_at" {
@@ -179,6 +179,7 @@ func (s *dbTableImporter) setTableDefaults(table *common.TableDef, goModuleName 
 	table.SortType = "asc"
 	table.CreateTime = gtime.Now()
 	table.UpdateTime = table.CreateTime
+	table.PkColumns = make(map[string]*common.ColumnDef)
 	table.ColumnMap = make(map[string]*common.ColumnDef, columnCount)
 	table.Columns = []*common.ColumnDef{}
 	table.ListColumns = []*common.ListColumnDef{}

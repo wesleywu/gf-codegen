@@ -3,9 +3,9 @@ module github.com/WesleyWu/gf-codegen/dbimport
 go 1.18
 
 require (
-	github.com/WesleyWu/gf-codegen v0.1.2
-	github.com/gogf/gf/contrib/drivers/mysql/v2 v2.1.2
-	github.com/gogf/gf/v2 v2.1.2
+	github.com/WesleyWu/gf-codegen v0.1.3
+	github.com/gogf/gf/contrib/drivers/mysql/v2 v2.2.5
+	github.com/gogf/gf/v2 v2.2.5
 )
 
 require (
