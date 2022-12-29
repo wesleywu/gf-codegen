@@ -105,7 +105,7 @@ func getBusinessName(tableName string, tablePrefix []string) string {
 	return removeTablePrefix(tableName, tablePrefix)
 }
 
-//删除表前缀
+// 删除表前缀
 func removeTablePrefix(tableName string, tablePrefix []string) string {
 	if !g.IsEmpty(tablePrefix) {
 		for _, str := range tablePrefix {
@@ -133,6 +133,7 @@ func LoadTableDefYaml(ctx context.Context, tableName string, yamlInputPath strin
 	}
 	table.SetVariableNames(goModuleName)
 	table.ColumnMap = def.Columns
+	table.PkColumns = make(map[string]*ColumnDef)
 	table.VirtualColumnMap = def.VirtualColumns
 
 	table.Columns = columnsSlice(def.Columns, false)
@@ -172,7 +173,7 @@ func loadCodeDefYaml(ctx context.Context, tableName string, yamlInputPath string
 	}
 
 	yamlFile := path.Join(curDir, yamlInputPath, tableName+".yaml")
-	bytes, err1 := ioutil.ReadFile(yamlFile)
+	bytes, err1 := os.ReadFile(yamlFile)
 	if err1 != nil {
 		return nil, gerror.New("读取 " + yamlFile + " 失败")
 	}
