@@ -68,8 +68,7 @@ type TableDef struct { // 表属性
 	HasCreatedBy         bool                  `yaml:"-"`                          // 是否有created_by字段
 	HasUpdatedBy         bool                  `yaml:"-"`                          // 是否有updated_by字段
 	IsPkInEdit           bool                  `yaml:"-"`                          // 主键是否出现在 EditColumn 中
-	PkColumn             *ColumnDef            `yaml:"-"`                          // 主键列信息
-	PkColumns            []*ColumnDef          `yaml:"-"`                          // 主键列信息（可以有多个）
+	PkColumns            map[string]*ColumnDef `yaml:"-"`                          // 主键列信息（可以有多个）
 	ColumnMap            map[string]*ColumnDef `yaml:"-"`                          // 所有列的map，key为 Name
 	Columns              []*ColumnDef          `yaml:"-"`                          // 数据库表所有字段
 	VirtualColumnMap     map[string]*ColumnDef `yaml:"-"`                          // 所有虚拟列的map，key为 Name
@@ -95,37 +94,37 @@ type TableDef struct { // 表属性
 }
 
 type ColumnDef struct { // 字段基本属性
-	Name                   string       `yaml:"-"`                                // 字段名
-	Comment                string       `yaml:"comment,omitempty"`                // 字段描述
-	SqlType                string       `yaml:"sqlType,omitempty"`                // 字段数据类型
-	Sort                   int          `yaml:"sort"`                             // 显示排序
-	GoType                 string       `yaml:"goType,omitempty"`                 // go字段类型，可以不填（会根据ColumnType自动判断）
-	ProtoType              string       `yaml:"-"`                                // protobuf类型
-	ConvertFunc            string       `yaml:"-"`                                // 对该类型的类型转换函数
-	GoField                string       `yaml:"goField,omitempty"`                // go字段变量名，可以不填（会根据ColumnName按驼峰规则自动填充）
-	HtmlField              string       `yaml:"htmlField,omitempty"`              // 字段前端变量名，可以不填（会根据ColumnName按小驼峰规则自动填充）
-	HtmlType               string       `yaml:"htmlType,omitempty"`               // 前端控件类型
-	IsPk                   bool         `yaml:"isPk,omitempty"`                   // 是否为主键（目前仅支持单字段主键，不支持联合主键）
-	IsIncrement            bool         `yaml:"isIncrement,omitempty"`            // 是否为自增长字段
-	IsRequired             bool         `yaml:"isRequired,omitempty"`             // 是否必填
-	DictType               string       `yaml:"dictType,omitempty"`               // 参照的字典名称
-	RelatedTableName       string       `yaml:"relatedTableName,omitempty"`       // 关联表名称
-	RelatedKeyColumn       *ColumnDef   `yaml:"-"`                                // 关联表的主键
-	RelatedValueColumnName string       `yaml:"relatedValueColumnName,omitempty"` // 关联表Value字段名
-	IsCascade              bool         `yaml:"isCascade,omitempty"`              // 是否需要级联查询（需要与关联表联合使用，级联规则为 当前表.ParentColumnName = 级联表.CascadeColumnName）
-	ParentColumnName       string       `yaml:"parentColumnName,omitempty"`       // 级联查询时本表中的上级字段名
-	CascadeColumnName      string       `yaml:"cascadeColumnName,omitempty"`      // 级联查询时关联表中对应字段名
-	IsCascadeParent        bool         `yaml:"-"`                                // 是否为级联查询的上级字段
-	CascadeParent          *ColumnDef   `yaml:"-"`                                // 级联父字段指针
-	CascadeChildrenColumns *gset.StrSet `yaml:"-"`                                // 所有级联子字段名（按级联顺序）
-	IsVirtual              bool         `yaml:"-"`                                // 是否虚拟字段，如果是虚拟，必须给出 ForeignXXX 三个字段的正确值
-	ForeignTableName       string       `yaml:"foreignTableName,omitempty"`       // 虚拟字段实际所在的表
-	ForeignKeyColumnName   string       `yaml:"foreignKeyColumnName,omitempty"`   // 与虚拟字段所在表的主键关联（参照）之当前表字段，即外键。注意，当前表中不应当出现多个字段同时关联某一个表的主键
-	ForeignValueColumnName string       `yaml:"foreignValueColumnName,omitempty"` // 虚拟字段对应所在表的实际字段
-	ForeignTableClass      string       `yaml:"-"`                                // 虚拟字段所在表的ClassName
-	CombinedTableClass     string       `yaml:"-"`                                // 关联、虚拟值字段所属实际表的ClassName
-	CombinedHtmlTableClass string       `yaml:"-"`                                // 关联、虚拟值字段所属实际表的前端类名（用于构建字典填充和下拉框内容延迟填充）
-	CombinedHtmlField      string       `yaml:"-"`                                // 关联、虚拟字段的前端变量名
+	Name                   string                `yaml:"-"`                                // 字段名
+	Comment                string                `yaml:"comment,omitempty"`                // 字段描述
+	SqlType                string                `yaml:"sqlType,omitempty"`                // 字段数据类型
+	Sort                   int                   `yaml:"sort"`                             // 显示排序
+	GoType                 string                `yaml:"goType,omitempty"`                 // go字段类型，可以不填（会根据ColumnType自动判断）
+	ProtoType              string                `yaml:"-"`                                // protobuf类型
+	ConvertFunc            string                `yaml:"-"`                                // 对该类型的类型转换函数
+	GoField                string                `yaml:"goField,omitempty"`                // go字段变量名，可以不填（会根据ColumnName按驼峰规则自动填充）
+	HtmlField              string                `yaml:"htmlField,omitempty"`              // 字段前端变量名，可以不填（会根据ColumnName按小驼峰规则自动填充）
+	HtmlType               string                `yaml:"htmlType,omitempty"`               // 前端控件类型
+	IsPk                   bool                  `yaml:"isPk,omitempty"`                   // 是否为主键（目前仅支持单字段主键，不支持联合主键）
+	IsIncrement            bool                  `yaml:"isIncrement,omitempty"`            // 是否为自增长字段
+	IsRequired             bool                  `yaml:"isRequired,omitempty"`             // 是否必填
+	DictType               string                `yaml:"dictType,omitempty"`               // 参照的字典名称
+	RelatedTableName       string                `yaml:"relatedTableName,omitempty"`       // 关联表名称
+	RelatedKeyColumn       map[string]*ColumnDef `yaml:"-"`                                // 关联表的主键
+	RelatedValueColumnName string                `yaml:"relatedValueColumnName,omitempty"` // 关联表Value字段名
+	IsCascade              bool                  `yaml:"isCascade,omitempty"`              // 是否需要级联查询（需要与关联表联合使用，级联规则为 当前表.ParentColumnName = 级联表.CascadeColumnName）
+	ParentColumnName       string                `yaml:"parentColumnName,omitempty"`       // 级联查询时本表中的上级字段名
+	CascadeColumnName      string                `yaml:"cascadeColumnName,omitempty"`      // 级联查询时关联表中对应字段名
+	IsCascadeParent        bool                  `yaml:"-"`                                // 是否为级联查询的上级字段
+	CascadeParent          *ColumnDef            `yaml:"-"`                                // 级联父字段指针
+	CascadeChildrenColumns *gset.StrSet          `yaml:"-"`                                // 所有级联子字段名（按级联顺序）
+	IsVirtual              bool                  `yaml:"-"`                                // 是否虚拟字段，如果是虚拟，必须给出 ForeignXXX 三个字段的正确值
+	ForeignTableName       string                `yaml:"foreignTableName,omitempty"`       // 虚拟字段实际所在的表
+	ForeignKeyColumnName   string                `yaml:"foreignKeyColumnName,omitempty"`   // 与虚拟字段所在表的主键关联（参照）之当前表字段，即外键。注意，当前表中不应当出现多个字段同时关联某一个表的主键
+	ForeignValueColumnName string                `yaml:"foreignValueColumnName,omitempty"` // 虚拟字段对应所在表的实际字段
+	ForeignTableClass      string                `yaml:"-"`                                // 虚拟字段所在表的ClassName
+	CombinedTableClass     string                `yaml:"-"`                                // 关联、虚拟值字段所属实际表的ClassName
+	CombinedHtmlTableClass string                `yaml:"-"`                                // 关联、虚拟值字段所属实际表的前端类名（用于构建字典填充和下拉框内容延迟填充）
+	CombinedHtmlField      string                `yaml:"-"`                                // 关联、虚拟字段的前端变量名
 }
 
 type ListColumnDef struct {
@@ -224,8 +223,7 @@ func (s *TableDef) ProcessColumns(ctx context.Context, yamlInputPath string, goM
 			return err
 		}
 		if column.IsPk {
-			s.PkColumn = column
-			s.PkColumns = append(s.PkColumns, column)
+			s.PkColumns[column.Name] = column
 		}
 		if column.GoType == "Time" {
 			s.HasTimeColumnInMain = true
@@ -663,7 +661,7 @@ func (s *TableDef) ProcessColumnRelatedAndForeign(ctx context.Context, column *C
 			innerRelatedTable.ClassNameWhenRelated = RelatedTablePrefix + s.ClassName + foreignTable.ClassName + innerRelatedTable.ClassName
 			innerRelatedTable.JsonNameWhenRelated = RelatedTableJsonPrefix + s.ClassName + foreignTable.ClassName + innerRelatedTable.ClassName
 			innerRelatedTable.CombinedClassName = foreignTable.ClassName + innerRelatedTable.ClassName
-			column.RelatedKeyColumn = innerRelatedTable.PkColumn
+			column.RelatedKeyColumn = innerRelatedTable.PkColumns
 			column.CombinedTableClass = innerRelatedTable.ClassNameWhenRelated
 			column.CombinedHtmlTableClass = foreignTable.ClassName + innerRelatedTable.ClassName
 			column.CombinedHtmlField = foreignTable.JsonNameWhenRelated + "." +
@@ -674,7 +672,7 @@ func (s *TableDef) ProcessColumnRelatedAndForeign(ctx context.Context, column *C
 			}
 			s.AllRelatedTableMap.Set(innerRelatedTable.CombinedClassName, innerRelatedTable)
 		} else { // 主表->外表 两级嵌套
-			column.RelatedKeyColumn = foreignTable.PkColumn
+			column.RelatedKeyColumn = foreignTable.PkColumns
 			column.CombinedTableClass = foreignTable.ClassNameWhenRelated
 			column.CombinedHtmlTableClass = foreignTable.ClassName
 			column.CombinedHtmlField = foreignTable.JsonNameWhenRelated + "." + gstr.CaseCamelLower(column.ForeignValueColumnName)
@@ -698,7 +696,7 @@ func (s *TableDef) ProcessColumnRelatedAndForeign(ctx context.Context, column *C
 		relatedTable.ClassNameWhenRelated = RelatedTablePrefix + s.ClassName + relatedTable.ClassName
 		relatedTable.JsonNameWhenRelated = RelatedTableJsonPrefix + s.ClassName + relatedTable.ClassName
 		relatedTable.CombinedClassName = relatedTable.ClassName
-		column.RelatedKeyColumn = relatedTable.PkColumn
+		column.RelatedKeyColumn = relatedTable.PkColumns
 		column.CombinedTableClass = relatedTable.ClassNameWhenRelated
 		column.CombinedHtmlTableClass = relatedTable.ClassName
 		column.CombinedHtmlField = relatedTable.JsonNameWhenRelated + "." + gstr.CaseCamelLower(column.RelatedValueColumnName)
@@ -722,21 +720,38 @@ func (s *TableDef) AddRelatedInfo(ctx context.Context, relatedTableName, related
 		}
 		return t
 	}).(*TableDef)
-	err := relatedTable.AddWithInfo(relatedValueColumnName, originalColumnName)
+	err := relatedTable.AddWithInfo(ctx, relatedValueColumnName, originalColumnName)
 	if err != nil {
 		return nil, err
 	}
 	return relatedTable, nil
 }
 
-func (s *TableDef) AddWithInfo(destValueColumn, originalColumn string) error {
+func (s *TableDef) AddWithInfo(ctx context.Context, destValueColumn, originalColumn string) error {
 	relatedValueColumn, foundValue := s.ColumnMap[destValueColumn]
 	if !foundValue {
 		return gerror.Newf("无法找到关联表的列 %s", destValueColumn)
 	}
 
-	s.OrmWithMapping = "orm:\"with:" + s.PkColumn.Name + "=" + originalColumn + "\""
-	s.RefColumns.GetOrSet(s.PkColumn.Name, s.PkColumn)
+	var (
+		pkColumnName string
+		pkColumn     *ColumnDef
+	)
+	if !g.IsEmpty(s.PkColumns) {
+		if len(s.PkColumns) > 1 {
+			g.Log().Warningf(ctx, "当前表%s定义了多个主键列，无法在表关联时被自动引用查询", s.Name)
+		} else {
+			for key, val := range s.PkColumns {
+				pkColumnName = key
+				pkColumn = val
+				break
+			}
+			s.OrmWithMapping = "orm:\"with:" + pkColumnName + "=" + originalColumn + "\""
+			s.RefColumns.GetOrSet(pkColumnName, pkColumn)
+		}
+	} else {
+		g.Log().Warningf(ctx, "当前表%s没有定义主键列，无法在表关联时被自动引用查询", s.Name)
+	}
 	s.RefColumns.GetOrSet(relatedValueColumn.Name, &relatedValueColumn)
 	return nil
 }

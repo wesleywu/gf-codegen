@@ -3,7 +3,7 @@ module github.com/WesleyWu/gf-codegen
 go 1.18
 
 require (
-	github.com/gogf/gf/v2 v2.1.2
+	github.com/gogf/gf/v2 v2.2.5
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 )
 
